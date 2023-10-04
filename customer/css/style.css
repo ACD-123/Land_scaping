@@ -568,6 +568,10 @@ header.navigation.fixed-top.nav-bg nav.navbar.navbar-expand-lg.navbar-dark {
     padding: 20px;
     background: #07085d;
   }
+  
+  .site-logo-form{
+    position: inherit !important;
+  }
 }
 
 .navbar .nav-item .nav-link {

@@ -82,7 +82,7 @@ include 'Header.php';
 
 <!-- LAWN MOVING SECTION START -->
 <section id="lawnmoving2">
-  <div class="row">
+  <div class="row align-items-center">
     <div class="col-lg-6 mb-6 mb-lg-0">
       <img src="assets/images/lawnmoving/lawnmoving2.png" width="100%"/>
     </div>
@@ -125,7 +125,7 @@ include 'Header.php';
     </div>
     <?php
                         // Query to fetch additional user data like ID and profile image
-                        $additionalDataQuery = "SELECT id, image, heading, content FROM services";
+                        $additionalDataQuery = "SELECT id, image, heading, content FROM categories";
 
                         $result = $conn->query($additionalDataQuery);
 
@@ -165,39 +165,7 @@ include 'Header.php';
     </div>
         
 
-    <!-- SECOND ROW START -->
-    <div class="row offer-sec">
-      <div class="col-lg-4 mb-4 mb-lg-0">
-       <div class="offer-inner-box" style="text-align: center;">
-        <img src="assets/images/offer/service.png" >
-        <h4>Lawn mowing</h4>
-        <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the 
-          industry's standard dummy text ever since the 1500s,Lorem Ipsum is sndard dummy text ever since the 1500s,
-        </p>
-        <a href='#'><button>Explore More</button></a>
-       </div>
-      </div>
-      <div class="col-lg-4 mb-4 mb-lg-0">
-        <div class="offer-inner-box" style="text-align: center;">
-          <img src="assets/images/offer/seeding.png">
-          <h4>Grass Cutting</h4>
-          <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the 
-            industry's standard dummy text ever since the 1500s,Lorem Ipsum is sndard dummy text ever since the 1500s,
-          </p>
-          <a href='#'><button>Explore More</button></a>
-         </div>
-      </div>
-      <div class="col-lg-4 mb-4 mb-lg-0">
-        <div class="offer-inner-box" style="text-align: center;">
-          <img src="assets/images/offer/snowplow.png">
-          <h4>Spring Clean Up</h4>
-          <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the 
-            industry's standard dummy text ever since the 1500s,Lorem Ipsum is sndard dummy text ever since the 1500s,
-          </p>
-          <a href='#'><button>Explore More</button></a>
-         </div>
-      </div>
-    </div>
+   
     <!-- SECOND ROW END -->
     <!-- third ROW start -->
     <div class="row">

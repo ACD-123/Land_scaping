@@ -7,7 +7,7 @@ if (isset($_POST['delete_service'])) {
     $service_id = $_POST['service_id'];
 
     // Delete the service from the database
-    $delete_sql = "DELETE FROM services WHERE id = $service_id";
+    $delete_sql = "DELETE FROM categories WHERE id = $service_id";
     if ($conn->query($delete_sql) === TRUE) {
         echo "Service deleted successfully.";
     } else {
@@ -34,14 +34,14 @@ if (isset($_POST['update_service'])) {
             exit;
         } elseif (move_uploaded_file($_FILES['new_image']['tmp_name'], $target_file)) {
             // Update the service in the database with the new image
-            $update_sql = "UPDATE services SET image = '$new_image', heading = '$heading', content = '$content' WHERE id = $service_id";
+            $update_sql = "UPDATE categories SET image = '$new_image', heading = '$heading', content = '$content' WHERE id = $service_id";
         } else {
             echo "Error uploading image.";
             exit;
         }
     } else {
         // Update the service in the database without changing the image
-        $update_sql = "UPDATE services SET heading = '$heading', content = '$content' WHERE id = $service_id";
+        $update_sql = "UPDATE categories SET heading = '$heading', content = '$content' WHERE id = $service_id";
     }
 
     if ($conn->query($update_sql) === TRUE) {
@@ -67,7 +67,7 @@ if (isset($_POST['add_services'])) {
         echo "Invalid image file.";
     } elseif (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
         // Insert data into the services table
-        $sql = "INSERT INTO services (image, heading, content) VALUES ('$image', '$heading', '$content')";
+        $sql = "INSERT INTO categories (image, heading, content) VALUES ('$image', '$heading', '$content')";
         if ($conn->query($sql) === TRUE) {
             echo "Service added successfully.";
         } else {
@@ -79,7 +79,7 @@ if (isset($_POST['add_services'])) {
 }
 
 // Retrieve and display services in a Bootstrap table
-$sql = "SELECT * FROM services";
+$sql = "SELECT * FROM categories";
 $result = $conn->query($sql);
 ?>
 

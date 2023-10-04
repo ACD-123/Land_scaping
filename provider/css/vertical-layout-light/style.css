@@ -32960,6 +32960,16 @@ color: #999;
   font-size: 16px;
   border-radius: 10px;
 }
+.profile-setting-form button {
+  float: right;
+  width: 30%;
+  background: #70BE44;
+  color: #fff;
+  border: 0;
+  padding: 16px 0;
+  font-size: 16px;
+  border-radius: 10px;
+}
 .main-panel .profile-setting p {
   color: #fff;
 }

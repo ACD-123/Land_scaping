@@ -24,7 +24,7 @@ if (isset($_POST['update_profile'])) {
     // Handle image application_images (profile picture)
     if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === 0) {
         $profile_picture_filename = $_FILES['profile_picture']['name'];
-        $profile_picture_local_path = '../assets/application_images/' . $profile_picture_filename;
+        $profile_picture_local_path = 'application_images/' . $profile_picture_filename;
         
         // Move the uploaded profile picture to the destination folder
         if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $profile_picture_local_path)) {
@@ -361,25 +361,34 @@ $conn->close();
           </div>
         </div>
         
+        <?php
+                if (isset($_SESSION['user_id'])) {
+                ?>
         <form id="contact" enctype="multipart/form-data" action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST">
     <div class="profile-setting-picture" style="padding: 50px 0px;">
         <h2>Your Profile</h2>
         <!-- Profile Picture Upload -->
         <?php
-                        // Query to fetch additional user data like ID and profile image
-                        $additionalDataQuery = "SELECT id, profile_picture FROM provider_registration WHERE id = $userId";
-
-                        $result = $conn->query($additionalDataQuery);
-
+                    if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
+                        $userId = $_SESSION['user_id'];
+                        $userDataQuery = "SELECT fullname, city, phone, email, profile_picture, zipcode, address, country, region FROM provider_registration WHERE id = $userId";
+                        $result = $conn->query($userDataQuery);
                         if ($result->num_rows > 0) {
                             $row = $result->fetch_assoc();
-                            $id = $row['id'];
+                            $fullname = $row['fullname'];
+                            $email = $row['email'];
+                            $city = $row['city'];
+                            $zipcode = $row['zipcode'];
+                            $region = $row['region'];
+                            $phone = $row['phone'];
+                            $address = $row['address'];
+                            $country = $row['country'];
                             $profileImage = $row['profile_picture'];
-                        }
-                        ?>
+                            // $user_id = $_SESSION['id'];
+                            ?>  
         <div class="small-12 medium-2 large-2 columns">
             <div class="circle">
-                <img class="profile-pic" src="http://localhost/aron_burks/assets/<?php echo $profileImage; ?>">
+                <img class="profile-pic" src="http://localhost/aron_burks/provider/<?php echo $profileImage; ?>">
             </div>
             <div class="p-image">
                 <i class="menu-icon mdi mdi-pencil"></i>
@@ -389,7 +398,7 @@ $conn->close();
     </div>
     <div class="row profile-setting-form">
         <fieldset>
-            <input placeholder="Full Name" name="fullname" type="text" tabindex="1" required autofocus value="<?php echo $fullname; ?>">
+            <input placeholder="Full Name" name="fullname" type="text" tabindex="1" required  value="<?php echo $fullname; ?>">
         </fieldset>
         <fieldset>
             <input placeholder="Email Address@" name="email" type="email" tabindex="2" required value="<?php echo $email; ?>">
@@ -404,21 +413,21 @@ $conn->close();
                                     <div class="col-lg-4 mb-3">
                                     <fieldset>
                                         <select id="country" name="country" class='form-control'>
-                                        <option value="">-- Country --</option>
+                                        <option value=""><?php echo $country; ?></option>
                                         </select>
                                     </fieldset>
                                     </div>
                                     <div class="col-lg-4 mb-3">
                                     <fieldset>
                                         <select id="region" name="region" class='form-control'>
-                                        <option value="">-- Region --</option>
+                                        <option value=""><?php echo $region; ?></option>
                                         </select>
                                     </fieldset>
                                     </div>
                                     <div class="col-lg-4 mb-3">
                                     <fieldset>
                                         <select id="city" name="city" class='form-control'>
-                                        <option value="">-- City --</option>
+                                        <option value=""><?php echo $city; ?></option>
                                         </select>
                                     </fieldset>
                                     </div>
@@ -430,8 +439,20 @@ $conn->close();
         <fieldset>
             <button type="submit" name="update_profile">Save</button>
         </fieldset>
+        <?php
+                        } else {
+                            echo "User Not Found";
+                        }
+                    }
+                ?>
     </div>
 </form>
+<?php
+                } else {
+                ?>
+            <?php
+              }
+            ?>
 
 
       <!-- main-panel ends -->

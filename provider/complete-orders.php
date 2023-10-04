@@ -33,65 +33,9 @@
 <body>
   <div class="container-scroller">
     <!-- partial:partials/_navbar.php -->
-    <nav class="navbar default-layout col-lg-12 col-12 p-0 fixed-top d-flex align-items-top flex-row">
-      <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-start">
-        <div class="me-3">
-          <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-bs-toggle="minimize">
-            <span class="icon-menu"></span>
-          </button>
-        </div>
-        <div>
-          <a class="navbar-brand brand-logo" href="index.php">
-            <img src="images/sitelogo-singup.png" alt="logo" />
-          </a>
-          <a class="navbar-brand brand-logo-mini" href="index.php">
-            <img src="images/sitelogo-singup.png" alt="logo" />
-          </a>
-        </div>
-      </div>
-      <div style="padding: 20px 20px;" class="navbar-menu-wrapper d-flex align-items-top"> 
-        <ul class="navbar-nav">
-          <li class="nav-item font-weight-semibold d-none d-lg-block ms-0">
-            <h4 style="color: #70BE44; padding-top: 30px;">Hey!</h4>
-            <h1 class="welcome-text">Good Morning, <span class="text-black fw-bold">Dwayne!</span></h1>
-          </li>
-        </ul>
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item font-weight-semibold d-none d-lg-block ms-0">
-            <a href="dashboard.php"><img class="hmesec" src="./images/home.PNG"/></a>
-          </li>
-          <li><a class="location-buton" href="#"><button><i class="menu-icon mdi mdi-map-marker"></i> Texas, USA Street 2416 A-216</button></a></li>
-        </ul>
-        <ul class="navbar-nav ms-auto">
-     <li class="nav-item dropdown d-none d-lg-block user-dropdown">
-      <div class="text-profile">
-        <div class="profiletext-imagesec">
-        <h2>Dwayne Johnson</h2>
-        <p>ID#214</p>
-      </div>
-        <a class="nav-link" id="UserDropdown" href="#" data-bs-toggle="dropdown" aria-expanded="false">
-          <img class="img-xs rounded-circle" src="images/faces/face8.jpg" alt="Profile image"> </a>
-      </div>
-            
-            <!-- <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="UserDropdown">
-              <div class="dropdown-header text-center">
-                <img class="img-md rounded-circle" src="images/faces/face8.jpg" alt="Profile image">
-                <p class="mb-1 mt-3 font-weight-semibold">Dwayne!</p>
-                <p class="fw-light text-muted mb-0">Dwayne@gmail.com</p>
-              </div>
-              <a class="dropdown-item"><i class="dropdown-item-icon mdi mdi-account-outline text-primary me-2"></i> My Profile <span class="badge badge-pill badge-danger">1</span></a>
-              <a class="dropdown-item"><i class="dropdown-item-icon mdi mdi-message-text-outline text-primary me-2"></i> Messages</a>
-              <a class="dropdown-item"><i class="dropdown-item-icon mdi mdi-calendar-check-outline text-primary me-2"></i> Activity</a>
-              <a class="dropdown-item"><i class="dropdown-item-icon mdi mdi-help-circle-outline text-primary me-2"></i> FAQ</a>
-              <a class="dropdown-item"><i class="dropdown-item-icon mdi mdi-power text-primary me-2"></i>Sign Out</a>
-            </div> -->
-          </li>
-        </ul>
-        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-bs-toggle="offcanvas">
-          <span class="mdi mdi-menu"></span>
-        </button>
-      </div>
-    </nav>
+    <?php 
+     include 'Header.php'
+    ?>
     <!-- partial -->
     <div class="container-fluid page-body-wrapper">
       <!-- partial:partials/_settings-panel.php -->

@@ -1,7 +1,4 @@
-<?php
-include 'Session.php'
 
-?>
 <!DOCTYPE html>
 <html lang="zxx">
 

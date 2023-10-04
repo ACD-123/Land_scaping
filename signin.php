@@ -1,15 +1,22 @@
 <?php
+session_start();
 include 'connection.php';
-
 
 // Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 $error_message = "";
+
 if (isset($_POST['login'])) {
     $email = $_POST['email'];
     $password = $_POST['password'];
+
+    // Destroy the existing session
+    session_destroy();
+    
+    // Start a new session
+    session_start();
 
     // Retrieve user data from the database based on the provided email
     $sql = "SELECT * FROM provider_registration WHERE email = '$email'";
@@ -24,13 +31,28 @@ if (isset($_POST['login'])) {
             // Password is correct, user is authenticated
 
             // You can set up a session here to maintain user login state
-            session_start();
             $_SESSION['user_id'] = $row['id'];
-            $_SESSION['user_role'] = $row['role_id'];
-
-            // Redirect the user to a protected page (e.g., dashboard.php)
-            header("Location: connectback.php");
-            exit;
+            
+            // Check the user's role and set a user type in the session
+            if ($row['role_id'] == 3) {
+                // User role is 3, set user type as 'customer'
+                $_SESSION['user_type'] = 'customer';
+                header("Location: ./customer/dashboard.php");
+                exit;
+            } elseif ($row['role_id'] == 2) {
+                // User role is 2, set user type as 'provider'
+                $_SESSION['user_type'] = 'provider';
+                header("Location: connectback.php");
+                exit;
+            } elseif ($row['role_id'] == 1) {
+                // User role is 1, set user type as 'admin'
+                $_SESSION['user_type'] = 'admin';
+                header("Location: ./admin/dashboard.php");
+                exit;
+            } else {
+                // Invalid role, display an error message
+                $error_message = "Invalid role for login.";
+            }
         } else {
             $error_message = "Invalid password. Please try again.";
         }
@@ -39,6 +61,9 @@ if (isset($_POST['login'])) {
     }
 }
 ?>
+<!-- Rest of your HTML code -->
+
+
 
 
 <!DOCTYPE html>
@@ -142,7 +167,7 @@ if (isset($_POST['login'])) {
                 background-size: cover; padding: 270px 30px;">
                     
                     <p>Hello, Friend! <br><b>Fill Your Info and start<br> a journey with us</b></p>
-                    <a href="registeration.php"><button>Sign Up</button></a>
+                    <a href="http://localhost/aron_burks/customer/Signup.php"><button>Sign Up</button></a>
                 </div>
 <!-- row end -->
             </div>

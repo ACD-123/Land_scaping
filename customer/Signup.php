@@ -22,7 +22,7 @@ if (isset($_POST['register'])) {
     $confirm_password = $_POST['confirm_password'];
 
     // Check if the email already exists in the registration table
-    $checkEmailQuery = "SELECT * FROM registration WHERE email='$email'";
+    $checkEmailQuery = "SELECT * FROM provider_registration WHERE email='$email'";
     $checkEmailResult = $conn->query($checkEmailQuery);
 
     if ($checkEmailResult->num_rows > 0) {
@@ -36,7 +36,7 @@ if (isset($_POST['register'])) {
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
             // Insert user data into the database
-            $sql = "INSERT INTO registration (fullname, email, phone, address, country, region, city, zipcode, password, role_id)
+            $sql = "INSERT INTO provider_registration (fullname, email, phone, address, country, region, city, zipcode, password, role_id)
             VALUES ('$fullname', '$email', '$phone', '$address', '$country', '$region', '$city', '$zipcode', '$hashed_password', $defaultRoleId)";
 
 if ($conn->query($sql) === TRUE) {
@@ -44,7 +44,7 @@ if ($conn->query($sql) === TRUE) {
   $verificationCode = sprintf('%06d', mt_rand(1000, 9999));
 
   // Store the verification code and set is_verified to 0 in the database
-  $updateVerificationQuery = "UPDATE registration SET verification_code='$verificationCode', is_verified=0 WHERE email='$email'";
+  $updateVerificationQuery = "UPDATE provider_registration SET verification_code='$verificationCode', is_verified=0 WHERE email='$email'";
   if ($conn->query($updateVerificationQuery) === TRUE) {
       // Send the verification email
       $to = $email;
@@ -187,7 +187,7 @@ $conn->close();
                   </fieldset>
                   <div id="error-messages" style="color: red;"></div>
                 </form>
-                <h4 style="font-size:16px;margin-top:10px;">Already have an account? <a href="Signin.php">Login</a></h4>
+                <h4 style="font-size:16px;margin-top:10px;">Already have an account? <a href="../signin.php">Login</a></h4>
 
                 <div class="sign-up-register-social">
                   <h4>Or register With</h4>

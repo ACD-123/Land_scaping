@@ -585,9 +585,85 @@ header.navigation.fixed-top.nav-bg nav.navbar.navbar-expand-lg.navbar-dark {
   }
 }
 @media (max-width: 991px) {
+  .probtn a{
+    background: #70BE44;
+    color: #fff;
+    border-radius: 5px;
+    border: 1px solid #70be44;
+    /* margin-left: 20px; */
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  .headerbtnarea{
+    width: 100%;
+  }
   .navigation {
-    padding: 20px;
+    padding: 8px;
     background: #07085d;
+  }
+  .probtn{
+    width: 50%;
+  }
+  .signbtn{
+    width: 50%;
+  }
+  .banner{
+    margin-top: 100px;
+  }
+  section#main-banner h3{    
+    font-size: 18px !important;
+    line-height: inherit !important;
+  }
+  section#main-banner h1{
+    font-size: 45px !important;
+    line-height: inherit !important;
+  }
+  p.banner4text{
+    font-size: 16px !important;
+    margin-right: 0px !important;
+  }
+  .search{
+    display: block !important;
+    padding: 12px;
+
+  }
+  .searchTerm{
+    width: 100% !important;
+  }
+  .searchButton{
+    margin-top: 12px;
+    width: 100% !important;
+    margin-left: 0px !important;
+  }
+  section#main-banner .search i.fa.fa-search{
+    top: 33px !important;
+    left: 22px !important;
+  }
+  section#lawnmoving2 .lawnmov-info2{
+    padding: 12px;
+  }
+  section#lawnmoving2 .lawnmov-info2 h3{
+    font-size: 22px !important;
+  }
+  section#lawnmoving2 .lawnmov-info2 h2{
+    font-size: 30px !important;
+  }
+  section#lawnmoving2 p{
+    margin-right: auto !important;
+  }
+  .bprovider-sec h1{
+    line-height: inherit !important;
+    font-size: 30px !important;
+  }
+  .bprovider-sec h2{
+    line-height: inherit !important;
+    font-size: 40px !important;
+  }
+  .bprovider-sec p{
+    padding-right: 0px !important;
+    line-height: inherit !important;
   }
 }
 
@@ -665,7 +741,7 @@ p.banner4text {
   font-size: 21px;
   font-weight: 600;
   font-family: 'Cairo';
-  margin-top: 27px;
+  /* margin-top: 27px; */
 }
 
 section#main-banner h3 {
@@ -3397,7 +3473,7 @@ section#hiring ul.button-sec li.completed button {
 
 /* services-style-start */
 section#lawnmoving2 .lawnmov-info2 {
-  padding: 100px 50px 0 50px;
+  /* padding: 100px 50px 0 50px; */
 }
 
 section#lawnmoving2 .lawnmov-info h3 {
@@ -3409,26 +3485,26 @@ section#lawnmoving2 .lawnmov-info h3 {
 }
 section#lawnmoving2 .lawnmov-info2 h3 {
   font-weight: 600;
-  font-size: 27px;
-  line-height: 31px;
-  text-transform: capitalize;
-  color: #70BE44;
+    font-size: 27px;
+    /* line-height: 31px; */
+    text-transform: capitalize;
+    color: #70BE44;
 }
 section#lawnmoving2 .lawnmov-info2 h2 {
   font-weight: 700;
-  font-size: 50px;
-  line-height: 60px;
+  font-size: 35px;
+  /* line-height: 60px; */
   text-transform: capitalize;
   color: #2C2C2C;
   padding-bottom: 10px;
 }
 section#lawnmoving2 p {
-  font-size: 16px;
-  line-height: 29.02px;
+  font-size: 14px;
+  /* line-height: 29.02px; */
   text-transform: capitalize;
   color: #444444;
-  margin-right: 191px;
-  padding-bottom: 15px;
+  margin-right: 122px;
+  padding-bottom: 4px;
 }
 section#lawnmoving2 .lawnmov-info2 ul li i {
   color: #70be44;
@@ -3457,7 +3533,17 @@ section#lawnmoving2 .lawnmov-info2 ul li {
   color: #fff;
   border-radius: 5px;
   border: 1px solid #70be44;
-  margin-left: 20px;
+  margin-left: 0px;
+}
+.signbtn{
+  background: none;
+  border: none;
+  width: auto;
+}
+.probtn{
+  background: none;
+  border: none;
+  width: auto;
 }
 /* services-style-end */
 
@@ -3496,11 +3582,12 @@ section#lawnmoving2 .lawnmov-info2 ul li {
 }
 section#offer {
   background: rgba(248, 248, 248, 1);
-  height: 82vh;
-  padding-bottom: 200px;
+  /* height: 82vh; */
+  padding-bottom: 100px;
   padding-top: 120px;
 }
 .offer-inner-box {
+  margin-top: 25px;
   border: 1px solid rgba(195, 195, 195, 1);
   box-shadow: 4px 5px 10px 3px rgba(0, 0, 0, 0.09);
   border-radius: 21px;
@@ -3558,8 +3645,11 @@ section#offer {
 }
 
 .provider-sec {
-  padding: 490px 0 120px;
-  height: 181vh;
+
+    /* padding: 490px 0 120px; */
+     /* height: 181vh; */
+  padding-bottom: 100px;
+  padding-top: 120px;
   background-repeat: no-repeat;
   background-position: bottom;
 }
@@ -3575,15 +3665,15 @@ section#offer {
 /* maintane-sec-style-start */
 .maintain-sec {
   background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  padding: 212px 0 0 0;
-  /* position: absolute; */
-  /* position: fixed; */
-  /* display: flex; */
-  /* justify-content: center; */
-  /* align-items: center; */
-  height: 75vh;
+    background-repeat: no-repeat;
+    background-size: cover;
+    /* padding: 212px 0 0 0; */
+    /* position: absolute; */
+    /* position: fixed; */
+    display: flex;
+    /* justify-content: center; */
+    align-items: center;
+    height: 75vh;
 }
 
 .maintain-sec h2 {
@@ -3609,7 +3699,7 @@ section#offer {
   text-align: center;
   color: #fff;
   text-transform: capitalize;
-  padding: 0px 159px;
+  /* padding: 0px 159px; */
 }
 .maintbtn {
   text-align: center;
@@ -3685,7 +3775,7 @@ section#offer {
 }
 
 section.bprovider-sec {
-  padding: 120px 0;
+  padding: 40px 0;
 }
 /* become A provider-style-end */
 
@@ -3759,7 +3849,7 @@ section.bprovider-sec {
 
 /* services-provider-page-style-start */
 section.plane-sec {
-  height: 65vh;
+  /* height: 65vh; */
   padding-top: 50px;
 }
 .serng {
@@ -3789,6 +3879,7 @@ section.plane-sec {
   padding: 32px;
   box-shadow: 4px 5px 10px 3px #00000017;
   border-radius: 24px;
+  margin-bottom: 34px;
 }
 
 .pack-img {
