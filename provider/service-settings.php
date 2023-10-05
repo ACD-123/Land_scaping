@@ -1,6 +1,62 @@
 <?php
+
 include '../connection.php';
+error_reporting(0);
+session_start();
+
+// Check if the user is logged in and has a valid session
+if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
+    $provider_id = $_SESSION['user_id'];
+
+    // Process the form data and insert it into the provider_services table
+    if (isset($_POST['submit'])) {
+        // Retrieve selected services and commercial services
+        $services = isset($_POST['services']) ? implode(', ', $_POST['services']) : '';
+        $commercialServices = isset($_POST['commercial_service']) ? implode(', ', $_POST['commercial_service']) : '';
+
+        $selectedPackage = $_POST['selectedPackage'];
+        $shop_working_day = $_POST['shop_working_day'];
+        $shop_working_day_to = $_POST['shop_working_day_to'];
+        $working_timings_from = $_POST['working_timings_from'];
+        $working_timings_to = $_POST['working_timings_to'];
+
+        // Handle image file upload (if applicable)
+        $image_paths = array();
+
+        if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
+            $image_path = 'uploads/' . $_FILES['images']['name'][0];
+            move_uploaded_file($_FILES['images']['tmp_name'][0], $image_path);
+        } else {
+            $image_path = ''; // Set image_path to empty if no image is uploaded
+        }
+
+        // Prepare and execute the SQL INSERT query
+        $insertQuery = "INSERT INTO provider_services (provider_id, services, commercial_services, shop_working_day, shop_working_day_to, working_timings_from, working_timings_to, image_path, selectedPackage)
+                        VALUES ('$provider_id', '$services', '$commercialServices', '$shop_working_day', '$shop_working_day_to',  '$working_timings_from', '$working_timings_to', '$image_path', '$selectedPackage')";
+
+        if ($conn->query($insertQuery) === TRUE) {
+            // Insertion was successful
+            // You can redirect or display a success message here
+            header("Location: service-settings.php");
+            exit;
+        } else {
+            // Insertion failed, you can handle this accordingly
+            $error_message = "Error: " . $conn->error;
+        }
+    }
+} else {
+    // If the user is not logged in as a provider, you can handle this case (e.g., redirect to a login page)
+    header("Location: ../signin.php");
+    exit;
+}
 ?>
+
+
+<!-- Your HTML form here -->
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -294,7 +350,8 @@ include '../connection.php';
         </ul>
       </nav>
       <!-- partial -->
-      <div class="main-panel">
+
+    <div class="main-panel">
       <div class="notify-profile">
         <p>Service <span style="color: #70BE44;">Settings</span></p>
       </div>
@@ -304,113 +361,109 @@ include '../connection.php';
           <div class="col-md-4 d-flex align-items-center">
             <h2>Your Service Radius</h2>
           </div>
-          <div class="col-md-3 d-flex align-items-center">
-            <p>Company Address:</p>
-          </div>
-          <div class="col-md-5 d-flex align-items-center">
+          <div class="col-md-8 d-flex align-items-center">
+            <p>Company Address:&nbsp;</p>
             <p>San Francisco, 5th Avenue 22nd Street,House No- B-242</p>
           </div>
+          <!-- <div class="col-md-5 d-flex align-items-center">
+            
+          </div> -->
         </div>
 
         
-          <div class="row col-md-10 col-md-offset-1">
-            <div class="space">
-        
-                                <div class="col-md-12">
-                                    <div class="steps-2">
-                                        <div class="progress" id="progress1">
-                                            <div class="progress-bar" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100" style="width: 20%;"></div>
-                                        </div>
-                                        <div class="step">
-                                            <span class="point activestep" onclick="javascript: resetActive(event, 5, 'step-1');" >
-                                                <!-- <span class="step-title"><span class="caret"></span>1 Gb</span> -->
-                                                <span class="price">Basic Package</span>
-                                            </span>
-                                            <span class="point" onclick="javascript: resetActive(event, 51, 'step-1');">
-                                                <!-- <span class="step-title"><span class="caret"></span>10 Gb</span> -->
-                                                <span class="price">Pro Package</span>
-                                            </span>
-                                            <span class="point" onclick="javascript: resetActive(event, 98, 'step-1');">
-                                                <span class="step-title"><span class="caret"></span>Business Package</span>
-                                                <!-- <span class="price">$120.00</span> -->
-                                            </span>
-                                           
-                                            
-                                        </div>
-                                    </div>
-                                </div>
-                           
-          
-        </div>
-      </div>
+       
       </div>
 
-      
+      <form method="post" enctype="multipart/form-data">
+        <div class="row">
+            <div class="space row your-service-radius">
+              <div class="col-md-12">
+                  <div class="steps-2">
+                      <div class="progress" id="progress1">
+                          <div class="progress-bar" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100" style="width:6%"></div>
+                      </div>
+                      <div class="step">
+                          <span class="point activestep" onclick="javascript: resetActive(event, 5, 'step-1'); selectPackage('Basic Package');" >
+                              <span class="price">Basic Package</span>
+                          </span>
+                          <span class="point" onclick="javascript: resetActive(event, 51, 'step-1'); selectPackage('Pro Package');">
+                              <span class="price">Pro Package</span>
+                            </span>
+                            <span class="point" onclick="javascript: resetActive(event, 98, 'step-1'); selectPackage('Business Package');">
+                              <span class="price">Business Package</span>
+                          </span>              
+                      </div>
+                  </div>
+              </div>
+            </div>
+        </div>
+        
+        <input type="hidden" id="selectedPackage" name="selectedPackage" value="Basic Package">
+
         <div class="service-provideselec">
           <div class="heading">
             <h2>Select the service You Provide</h2>
           </div>
           <div class="row" style="padding: 20px 0px;">
-          <div class="col-md-3">
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Gardening</label><br>
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Land Clearing</label><br>
-          </div>
-          <div class="col-md-3">
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Lawn Mowing</label><br>
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Grass Trimming</label><br>
-          </div>
-          <div class="col-md-3">
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Tree Planting</label><br>
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Weeding</label><br>
-          </div>
-          <div class="col-md-3">
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Snow removal</label><br>
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Snow removal</label><br>
-          </div>
-        </div>
+            
+                <?php
+              // Include your database connection script
+              include 'connection.php';
 
-        <div class="row" style="padding: 20px 0px;">
-          <h2>Select the Commercial service You Provide</h2>
-          <div class="col-md-3">
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Gardening</label><br>
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Land Clearing</label><br>
+              // Retrieve services from the database
+              $sql = "SELECT * FROM categories";
+              $result = $conn->query($sql);
+
+              if ($result->num_rows > 0) {
+                  while ($row = $result->fetch_assoc()) {
+                      $service_id = $row['id'];
+                      $service_name = $row['heading'];
+                      echo '<div class="col-md-3">';
+                      echo '<input type="checkbox" id="service' . $service_id . '" name="services[]" value="' . $service_name . '">';
+                      echo '<label for="service' . $service_id . '"> ' . $service_name . '</label><br>';
+                      echo '</div>';
+                  }
+              }
+              ?>
+                
           </div>
-          <div class="col-md-3">
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Lawn Mowing</label><br>
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Grass Trimming</label><br>
+
+
+          <div class="heading">
+            <h2>Select the Commercial service You Provide</h2>
           </div>
-          <div class="col-md-3">
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Tree Planting</label><br>
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Weeding</label><br>
+          <div class="row" style="padding: 20px 0px;">            
+                    <?php
+                  // Include your database connection script
+                  include 'connection.php';
+
+                  // Retrieve services from the database
+                  $sql = "SELECT * FROM categories";
+                  $result = $conn->query($sql);
+
+                  if ($result->num_rows > 0) {
+                      while ($row = $result->fetch_assoc()) {
+                          $service_id = $row['id'];
+                          $service_name = $row['heading'];
+                          echo '<div class="col-md-3">';
+                          // <input type="checkbox" id="commercialService1" name="commercial_service[]" value="Gardening">
+
+                          echo '<input type="checkbox" id="commercialService' . $service_id . '" name="commercial_service[]" value="' . $service_name . '">';
+                          echo '<label for="commercialService' . $service_id . '"> ' . $service_name . '</label><br>';
+                          echo '</div>';
+                      }
+                  }
+                  ?>
+           
           </div>
-          <div class="col-md-3">
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Snow removal</label><br>
-            <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-            <label for="vehicle1"> Snow removal</label><br>
-          </div>
-        </div>
       </div>
+
 
       <div class="setting-shoping-days">
         <div class="row">
             <h2>Shop Working Days</h2>
             <div class="col-md-4">
-                <select name="Todays_Day">
+                <select name="shop_working_day">
                     <option value="Monday">Monday</option>
                     <option value="Tuesday">Tuesday</option>
                     <option value="Wednesday">Wednesday</option>
@@ -424,7 +477,7 @@ include '../connection.php';
                 <h3>To</h3>
             </div>
             <div class="col-md-4">
-                <select name="Todays_Day">
+                <select name="shop_working_day_to">
                     <option value="Monday">Monday</option>
                     <option value="Tuesday">Tuesday</option>
                     <option value="Wednesday">Wednesday</option>
@@ -441,53 +494,86 @@ include '../connection.php';
         <div class="row">
             <h2>Working Timings</h2>
             <div class="col-md-4">
-              <input type="time" id="appt" name="appt">
+              <input type="time" id="appt" name="working_timings_from">
             </div>
             <div class="col-md-2">
                 <h3>From</h3>
             </div>
             <div class="col-md-4">
-              <input type="time" id="appt" name="appt">
+              <input type="time" id="appt" name="working_timings_to">
             </div>
             <div class="col-md-2">
             </div>
         </div>
 
         <div class="gallery-section-service" style="padding: 40px 0px 30px 0px;">
-          <h2>Your Past work Images</h2>
-          <div class="container">
-              <div class="row">
-                <form method="post" enctype="multipart/form-data">
-                  <div class="my-2" style="background-image: url(./images/upload.PNG);">
-                    <input  type="file" class="form-control" id="images" name="images[]" onchange="preview_images();" multiple/>
-                  </div>
-                  <div>
-                 
-                  </div>
-                </form>
-              </div>
-          
-              <div class="row" id="image_preview"></div>
+    <h2>Your Past work Images</h2>
+    <div class="container">
+        <div class="row">
+            <div class="my-2" style="background-image: url(./images/upload.PNG);">
+                <input type="file" class="form-control" id="images" name="images[]" onchange="preview_images();" multiple accept="image/*" />
             </div>
         </div>
+        <div class="row" id="image_preview"></div>
+    </div>
+</div>
+
+<script>
+    function preview_images() {
+        var preview = document.getElementById("image_preview");
+        var files = document.getElementById("images").files;
+
+        if (files.length !== 5) {
+            alert("Please select exactly 5 images.");
+            return;
+        }
+
+        preview.innerHTML = ""; // Clear previous preview
+
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var reader = new FileReader();
+
+            reader.onload = function (e) {
+                var image = document.createElement("img");
+                image.src = e.target.result;
+                image.className = "preview-image";
+                preview.appendChild(image);
+            };
+
+            reader.readAsDataURL(file);
+        }
+    }
+</script>
+
         <div class="next-previouss">
           <div class="row">
-              <div class="col-md-6">
-            <a class="finish" href="#"><button>Save</button></a>
-          </div>
-          <div class="col-md-6">
-            
+            <div class="col-md-6">
+            <a class="finish" href="#"><button type="submit" name="submit">Save</button></a>
+            </div>
+            <div class="col-md-6">
+              
             </div>
           </div>
         </div>
 
       </div>
-
+      </form>
       <!-- main-panel ends -->
     </div>
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
+  <script>
+function selectPackage(packageName) {
+    // Set the selected package in the hidden input field
+    document.getElementById('selectedPackage').value = packageName;
+    
+    // You can also highlight the selected package visually if needed
+    // For example, by adding a CSS class to the selected package element
+    // and removing it from others
+}
+</script>
 
   <!-- plugins:js -->
   <script src="vendors/js/vendor.bundle.base.js"></script>
@@ -538,7 +624,7 @@ include '../connection.php';
 
 </script>
 
-<script>
+<!-- <script>
   function preview_images() {
 var total_file = document.getElementById("images").files.length;
 for(var i=0;i<total_file;i++){
@@ -552,4 +638,4 @@ function resetForm(){
 $("#image_preview").php("");
 return true;
 }
-</script>
+</script> -->

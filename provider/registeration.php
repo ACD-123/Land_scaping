@@ -158,7 +158,8 @@ $conn->close();
                                 <div>
                                   <!-- profile picture upload  -->
                                   <div class="img-wrapper">
-                                    <div>
+                                    <p style="text-align: left;margin-left: 10px;">Your Profile Picture</p>
+
                                       <label for="profile_picture" class="img-upload-btn">
                                         <div class="preview">
                                           <p class="no-pic"><img src="../assets/images/becomesprovider/regupload.png" alt=""></p>
@@ -167,11 +168,8 @@ $conn->close();
                                       </label>
                                       <input type="file" id="profile_picture" name="profile_picture" accept=".jpg, .jpeg, .png" style="opacity: 0;">
                                     </div>
-                                    <br>
-                                  </div>
                                   <!-- profile picture upload end  -->
 
-                                    <p style="text-align: left;margin-left: 10px;">Your Profile Picture</p>
                                 </div>
                                 <fieldset>
                                     <input placeholder="Full Name" name="fullname" type="text" tabindex="1" required autofocus>
@@ -314,13 +312,14 @@ function updateImageDisplay() {
 
 <!-- Main Script -->
 <script src="../assets/js/script.js"></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
+  <!-- <script  src="./script.js"></script> -->
 
-</body>
-</html>
-<script>
-    $(document).ready(function() {
+  <script>
+ $(document).ready(function() {
   //-------------------------------SELECT CASCADING-------------------------//
-  var selectedCountry = (selectedRegion = selectedCity = "");
+  var selectedCountry = (selectedRegion = selectedCity = countryCode = "");
+
   // This is a demo API key for testing purposes. You should rather request your API key (free) from http://battuta.medunes.net/
   var BATTUTA_KEY = "00000000000000000000000000000000";
   // Populate country select box from battuta API
@@ -333,16 +332,25 @@ function updateImageDisplay() {
   $.getJSON(url, function(data) {
     console.log(data);
     $.each(data, function(index, value) {
-      // APPEND OR INSERT DATA TO SELECT ELEMENT.
+      // APPEND OR INSERT DATA TO SELECT ELEMENT. Set the country code in the id section rather than in the value.
       $("#country").append(
-        '<option value="' + value.code + '">' + value.name + "</option>"
+        '<option id="' +
+          value.code +
+          '" value="' +
+          value.name +
+          '">' +
+          value.name +
+          "</option>"
       );
     });
   });
   // Country selected --> update region list .
   $("#country").change(function() {
     selectedCountry = this.options[this.selectedIndex].text;
-    countryCode = $("#country").val();
+// get the id of the option which has the country code.
+    countryCode = $(this)
+      .children(":selected")
+      .attr("id");
     // Populate country select box from battuta API
     url =
       "https://battuta.medunes.net/api/region/" +
@@ -365,7 +373,7 @@ function updateImageDisplay() {
   $("#region").on("change", function() {
     selectedRegion = this.options[this.selectedIndex].text;
     // Populate country select box from battuta API
-    countryCode = $("#country").val();
+    // countryCode = $("#country").val();
     region = $("#region").val();
     url =
       "https://battuta.medunes.net/api/city/" +
@@ -401,4 +409,39 @@ function updateImageDisplay() {
   });
 });
 
+// very simple process form function to collect input values.
+function processForm() {
+  var username = (password = country = region = city = "");
+  username = $("#username").val();
+  password = $("#password").val();
+  country = $("#country").val();
+  region = $("#region").val();
+  city = $("#city").val();
+  if (
+    // username != "" &&
+    // password != "" &&
+    country != "" &&
+    region != "" &&
+    city != ""
+  ) {
+    $("#location").html(
+      // "Username: " +
+      //   username +
+      //   " /Password: " +
+      //   password +
+        "Locatation: Country: " +
+        country +
+        ", Region: " +
+        region +
+        ", City: " +
+        city
+    );
+  } else {
+    $("#location").html("Fill Country, Region and City to view the location");
+    return false;
+  }
+}
+
 </script>
+</body>
+</html>

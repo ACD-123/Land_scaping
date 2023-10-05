@@ -123,26 +123,16 @@ include 'Header.php';
         <h3>Services you can avail</h3>
       </div>
     </div>
-    <?php
-                        // Query to fetch additional user data like ID and profile image
-                        $additionalDataQuery = "SELECT id, image, heading, content FROM categories";
-
-                        $result = $conn->query($additionalDataQuery);
-
-                        if ($result->num_rows > 0) {
-                            $row = $result->fetch_assoc();
-                            $id = $row['id'];
-                            $image = $row['image'];
-                            $heading = $row['heading'];
-                            $content = $row['content'];
-
-                            // Display ID
-                            
-                        }
-                        ?>
+   
     <div class="row">
         <?php
-        if ($result->num_rows >= 1 ) {
+         // Include your database connection script
+        include 'connection.php';
+
+        // Retrieve services from the database
+        $sql = "SELECT * FROM categories LIMIT 6";
+        $result = $conn->query($sql);
+         if ($result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
                 $image = $row['image'];
                 $heading = $row['heading'];

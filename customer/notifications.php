@@ -1,3 +1,7 @@
+<?php
+// session_start();
+include 'connection.php';
+?>
 <!DOCTYPE html>
 <html lang="zxx">
 
@@ -42,35 +46,9 @@
 <body class="services-page">
   
 
-    <header class="navigation fixed-top">
-        <nav class="navbar navbar-expand-lg navbar-dark">
-          <a class="navbar-brand" href="index.php"><img src="images/signup/sitelogo-singup.png" alt="Egen"></a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navigation"
-            aria-controls="navigation" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-      
-          <div class="collapse navbar-collapse text-center" id="navigation">
-            <ul class="navbar-nav ml-auto">
-              <li class="nav-item active">
-                <a class="nav-link" href="index.php">Home</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="services.php">Services</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="notifications.php">Notifications</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="myhirings.php">My Hirings</a>
-              </li> 
-              <li class="nav-item">
-                <a class="nav-link" href="provider.php">Provider</a>
-              </li> 
-            </ul>
-          </div>
-        </nav>
-      </header>
+<?php
+include 'Header.php'
+?>
 
 <!-- banner -->
 <section id="main-banner" class="banner bg-cover position-relative d-flex justify-content-center align-items-center"

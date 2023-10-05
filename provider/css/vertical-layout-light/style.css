@@ -31272,6 +31272,8 @@ nav.navbar a.location-buton button {
   border: 2px solid #69b542;
   color: #8d8d8d;
   padding: 9px 13px;
+  width: 320px;
+  text-align: left;
   border-radius: 18px;
   font-size: 16px;
   line-height: 26px;
@@ -31279,8 +31281,37 @@ nav.navbar a.location-buton button {
 .profiletext-imagesec{
   display: flex;
   flex-direction: column;
+  
+  width: max-content;
   justify-content: center;
   text-align: end;
+}
+@media (max-width: 480px){
+.navbar .navbar-brand-wrapper {
+    width: 100px;
+}
+}
+@media (max-width: 991px){
+.navbar .navbar-menu-wrapper {
+  width: calc(88% - 55px);
+
+}
+.navbar .navbar-brand-wrapper .brand-logo-mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  max-width: 100%;
+  margin: auto;
+}
+}
+.navbar .navbar-menu-wrapper .navbar-nav .nav-item .welcome-text{
+  font-family: "Manrope", sans-serif;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 25px;
+  /* line-height: 38px; */
+  color: #8D8D8D;
+  margin: 0px !important;
 }
 .profiletext-imagesec h2 {
   color: #232323;
@@ -31732,15 +31763,15 @@ li.nav-item.signup a {
 /*Progress bars*/
 .your-service-radius span.point span.price {
   font-family: Cairo !important;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 28px;
   letter-spacing: 0em;
   text-align: left;
   color: #BCBCBC;
-  left: -30px;
+  left: -50px;
   right: 0;
-  width: 260px;
+  /* width: 260px; */
   top: -42px;
 }
 .your-service-radius span.point.activestep span.price {

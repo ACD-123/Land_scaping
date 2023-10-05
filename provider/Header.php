@@ -39,7 +39,7 @@ include '../connection.php';
                             ?>  
   <ul class="navbar-nav">
       <li class="nav-item font-weight-semibold d-none d-lg-block ms-0">
-        <h4 style="color: #70BE44; padding-top: 30px;">Hey!</h4>
+        <h4 style="color: #70BE44;margin: 0px !important;">Hey!</h4>
         <h1 class="welcome-text">Good Morning, <span class="text-black fw-bold">
             <?php echo $ProviderName; ?>
           </span></h1>
@@ -51,7 +51,8 @@ include '../connection.php';
       </li>
       <li><a class="location-buton" href="#"><button><i class="menu-icon mdi mdi-map-marker"></i>
             
-            <?php echo $address; ?>,
+           
+            <!-- <?php echo $address; ?>, -->
             <?php echo $country; ?>,
             <?php echo $city; ?>
           </button></a></li>
@@ -60,12 +61,13 @@ include '../connection.php';
       <li class="nav-item dropdown d-none d-lg-block user-dropdown">
         <div class="text-profile">
           <div class="profiletext-imagesec">
-            <h2>
+            <span style="color: #232323;font-size: 18px;">
               <?php echo $ProviderName; ?>
-            </h2>
-            <p>
+            </span>
+            <span style="color: #227A4E;font-size: 16px;">
               <?php echo $userId; ?>
-            </p>
+            </span>
+            
           </div>
 
           <div class="dropdown">
@@ -78,7 +80,7 @@ include '../connection.php';
             <ul class="dropdown-menu dropdown-menu-right" style="position: absolute;left: -43px;"
               aria-labelledby="UserDropdown">
               <li><a class="dropdown-item" href="#">Profile</a></li>
-              <li><a class="dropdown-item" href="logout.php">Logout</a></li>
+              <li><a class="dropdown-item" href="../logout.php">Logout</a></li>
             </ul>
           </div>
         </div>

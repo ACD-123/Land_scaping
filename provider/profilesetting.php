@@ -5,7 +5,6 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-$profile_picture = ''; // Initialize profile picture path
 $fullname = $email = $phone = $address = $country = $region = $city = $zipcode = '';
 $error_message = '';
 
@@ -21,11 +20,11 @@ if (isset($_POST['update_profile'])) {
     $city = $_POST['city'];
     $zipcode = $_POST['zipcode'];
 
-    // Handle image application_images (profile picture)
+    // Check if a new profile picture is uploaded
     if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === 0) {
         $profile_picture_filename = $_FILES['profile_picture']['name'];
         $profile_picture_local_path = 'application_images/' . $profile_picture_filename;
-        
+
         // Move the uploaded profile picture to the destination folder
         if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $profile_picture_local_path)) {
             $profile_picture = $profile_picture_local_path;
@@ -34,11 +33,18 @@ if (isset($_POST['update_profile'])) {
         }
     }
 
-    // Update provider's information in the database
+    // Build the SQL query
     $update_sql = "UPDATE provider_registration SET fullname='$fullname', email='$email', phone='$phone', address='$address', 
-                  country='$country', region='$region', city='$city', zipcode='$zipcode', profile_picture='$profile_picture' 
-                  WHERE email='$email'"; // Assuming email is a unique identifier
+                  country='$country', region='$region', city='$city', zipcode='$zipcode'";
 
+    // Add the profile_picture update only if a new image is uploaded
+    if (!empty($profile_picture)) {
+        $update_sql .= ", profile_picture='$profile_picture'";
+    }
+
+    $update_sql .= " WHERE email='$email'"; // Assuming email is a unique identifier
+
+    // Execute the SQL query
     if ($conn->query($update_sql) === TRUE) {
         $error_message = "Profile updated successfully.";
     } else {
@@ -49,6 +55,7 @@ if (isset($_POST['update_profile'])) {
 // Close the database connection
 $conn->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -82,6 +89,8 @@ $conn->close();
   <link rel="stylesheet" href="css/vertical-layout-light/style.css">
   <!-- endinject -->
   <link rel="shortcut icon" href="images/sitelogo-singup.png" />
+  <!-- <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css'> -->
+
 </head>
 <body>
   <div class="container-scroller">
@@ -365,88 +374,88 @@ $conn->close();
                 if (isset($_SESSION['user_id'])) {
                 ?>
         <form id="contact" enctype="multipart/form-data" action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST">
-    <div class="profile-setting-picture" style="padding: 50px 0px;">
-        <h2>Your Profile</h2>
-        <!-- Profile Picture Upload -->
-        <?php
-                    if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
-                        $userId = $_SESSION['user_id'];
-                        $userDataQuery = "SELECT fullname, city, phone, email, profile_picture, zipcode, address, country, region FROM provider_registration WHERE id = $userId";
-                        $result = $conn->query($userDataQuery);
-                        if ($result->num_rows > 0) {
-                            $row = $result->fetch_assoc();
-                            $fullname = $row['fullname'];
-                            $email = $row['email'];
-                            $city = $row['city'];
-                            $zipcode = $row['zipcode'];
-                            $region = $row['region'];
-                            $phone = $row['phone'];
-                            $address = $row['address'];
-                            $country = $row['country'];
-                            $profileImage = $row['profile_picture'];
-                            // $user_id = $_SESSION['id'];
-                            ?>  
-        <div class="small-12 medium-2 large-2 columns">
-            <div class="circle">
-                <img class="profile-pic" src="http://localhost/aron_burks/provider/<?php echo $profileImage; ?>">
-            </div>
-            <div class="p-image">
-                <i class="menu-icon mdi mdi-pencil"></i>
-                <input class="file-upload" type="file" name="profile_picture" accept="image/*"/>
-            </div>
-        </div>
-    </div>
-    <div class="row profile-setting-form">
-        <fieldset>
-            <input placeholder="Full Name" name="fullname" type="text" tabindex="1" required  value="<?php echo $fullname; ?>">
-        </fieldset>
-        <fieldset>
-            <input placeholder="Email Address@" name="email" type="email" tabindex="2" required value="<?php echo $email; ?>">
-        </fieldset>
-        <fieldset>
-            <input placeholder="Phone #@" name="phone" type="tel" tabindex="3" required value="<?php echo $phone; ?>">
-        </fieldset>
-        <fieldset>
-            <input placeholder="Street Address@" name="address" type="text" tabindex="4" required value="<?php echo $address; ?>">
-        </fieldset>
-        <div class="row">
-                                    <div class="col-lg-4 mb-3">
-                                    <fieldset>
-                                        <select id="country" name="country" class='form-control'>
-                                        <option value=""><?php echo $country; ?></option>
-                                        </select>
-                                    </fieldset>
-                                    </div>
-                                    <div class="col-lg-4 mb-3">
-                                    <fieldset>
-                                        <select id="region" name="region" class='form-control'>
-                                        <option value=""><?php echo $region; ?></option>
-                                        </select>
-                                    </fieldset>
-                                    </div>
-                                    <div class="col-lg-4 mb-3">
-                                    <fieldset>
-                                        <select id="city" name="city" class='form-control'>
-                                        <option value=""><?php echo $city; ?></option>
-                                        </select>
-                                    </fieldset>
-                                    </div>
-                                </div>
-        <fieldset>
-            <input placeholder="Zip Code" name="zipcode" type="text" tabindex="5" required value="<?php echo $zipcode; ?>">
-        </fieldset>
-        <div id="error-messages" style="color:red;"></div>
-        <fieldset>
-            <button type="submit" name="update_profile">Save</button>
-        </fieldset>
-        <?php
-                        } else {
-                            echo "User Not Found";
-                        }
-                    }
-                ?>
-    </div>
-</form>
+          <div class="profile-setting-picture" style="padding: 50px 0px;">
+              <h2>Your Profile</h2>
+              <!-- Profile Picture Upload -->
+              <?php
+                          if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
+                              $userId = $_SESSION['user_id'];
+                              $userDataQuery = "SELECT fullname, city, phone, email, profile_picture, zipcode, address, country, region FROM provider_registration WHERE id = $userId";
+                              $result = $conn->query($userDataQuery);
+                              if ($result->num_rows > 0) {
+                                  $row = $result->fetch_assoc();
+                                  $fullname = $row['fullname'];
+                                  $email = $row['email'];
+                                  $city = $row['city'];
+                                  $zipcode = $row['zipcode'];
+                                  $region = $row['region'];
+                                  $phone = $row['phone'];
+                                  $address = $row['address'];
+                                  $country = $row['country'];
+                                  $profileImage = $row['profile_picture'];
+                                  // $user_id = $_SESSION['id'];
+                                  ?>  
+              <div class="small-12 medium-2 large-2 columns">
+                  <div class="circle">
+                      <img class="profile-pic" src="http://localhost/aron_burks/provider/<?php echo $profileImage; ?>">
+                  </div>
+                  <div class="p-image">
+                      <i class="menu-icon mdi mdi-pencil"></i>
+                      <input class="file-upload" type="file" name="profile_picture" accept="image/*"/>
+                  </div>
+              </div>
+          </div>
+          <div class="row profile-setting-form">
+              <fieldset>
+                  <input placeholder="Full Name" name="fullname" type="text" tabindex="1" required  value="<?php echo $fullname; ?>">
+              </fieldset>
+              <fieldset>
+                  <input placeholder="Email Address@" name="email" type="email" tabindex="2" required value="<?php echo $email; ?>">
+              </fieldset>
+              <fieldset>
+                  <input placeholder="Phone #@" name="phone" type="tel" tabindex="3" required value="<?php echo $phone; ?>">
+              </fieldset>
+              <fieldset>
+                  <input placeholder="Street Address@" name="address" type="text" tabindex="4" required value="<?php echo $address; ?>">
+              </fieldset>
+              <div class="row">
+                                          <div class="col-lg-4 mb-3">
+                                          <fieldset>
+                                              <select id="country" name="country" class='form-control'>
+                                              <option value=""><?php echo $country; ?></option>
+                                              </select>
+                                          </fieldset>
+                                          </div>
+                                          <div class="col-lg-4 mb-3">
+                                          <fieldset>
+                                              <select id="region" name="region" class='form-control'>
+                                              <option value=""><?php echo $region; ?></option>
+                                              </select>
+                                          </fieldset>
+                                          </div>
+                                          <div class="col-lg-4 mb-3">
+                                          <fieldset>
+                                              <select id="city" name="city" class='form-control'>
+                                              <option value=""><?php echo $city; ?></option>
+                                              </select>
+                                          </fieldset>
+                                          </div>
+                                      </div>
+              <fieldset>
+                  <input placeholder="Zip Code" name="zipcode" type="text" tabindex="5" required value="<?php echo $zipcode; ?>">
+              </fieldset>
+              <div id="error-messages" style="color:red;"></div>
+              <fieldset>
+                  <button type="submit" name="update_profile">Save</button>
+              </fieldset>
+              <?php
+                              } else {
+                                  echo "User Not Found";
+                              }
+                          }
+                      ?>
+          </div>
+        </form>
 <?php
                 } else {
                 ?>
@@ -485,117 +494,137 @@ $conn->close();
   <script src="script.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
   <!-- End custom js for this page-->
-</body>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
+  <!-- <script  src="./script.js"></script> -->
 
-</html>
-<script>
-  $(document).ready(function() {
+  <script>
+ $(document).ready(function() {
+  //-------------------------------SELECT CASCADING-------------------------//
+  var selectedCountry = (selectedRegion = selectedCity = countryCode = "");
 
-    
-var readURL = function(input) {
-    if (input.files && input.files[0]) {
-        var reader = new FileReader();
+  // This is a demo API key for testing purposes. You should rather request your API key (free) from http://battuta.medunes.net/
+  var BATTUTA_KEY = "00000000000000000000000000000000";
+  // Populate country select box from battuta API
+  url =
+    "https://battuta.medunes.net/api/country/all/?key=" +
+    BATTUTA_KEY +
+    "&callback=?";
 
-        reader.onload = function (e) {
-            $('.profile-pic').attr('src', e.target.result);
-        }
-
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-
-$(".file-upload").on('change', function(){
-    readURL(this);
-});
-
-$(".upload-button").on('click', function() {
-   $(".file-upload").click();
-});
-});
-</script>
-<script>
-  $(document).ready(function() {
-//-------------------------------SELECT CASCADING-------------------------//
-var selectedCountry = (selectedRegion = selectedCity = "");
-// This is a demo API key for testing purposes. You should rather request your API key (free) from http://battuta.medunes.net/
-var BATTUTA_KEY = "00000000000000000000000000000000";
-// Populate country select box from battuta API
-url =
-  "https://battuta.medunes.net/api/country/all/?key=" +
-  BATTUTA_KEY +
-  "&callback=?";
-
-// EXTRACT JSON DATA.
-$.getJSON(url, function(data) {
-  console.log(data);
-  $.each(data, function(index, value) {
-    // APPEND OR INSERT DATA TO SELECT ELEMENT.
-    $("#country").append(
-      '<option value="' + value.code + '">' + value.name + "</option>"
+  // EXTRACT JSON DATA.
+  $.getJSON(url, function(data) {
+    console.log(data);
+    $.each(data, function(index, value) {
+      // APPEND OR INSERT DATA TO SELECT ELEMENT. Set the country code in the id section rather than in the value.
+      $("#country").append(
+        '<option id="' +
+          value.code +
+          '" value="' +
+          value.name +
+          '">' +
+          value.name +
+          "</option>"
+      );
+    });
+  });
+  // Country selected --> update region list .
+  $("#country").change(function() {
+    selectedCountry = this.options[this.selectedIndex].text;
+// get the id of the option which has the country code.
+    countryCode = $(this)
+      .children(":selected")
+      .attr("id");
+    // Populate country select box from battuta API
+    url =
+      "https://battuta.medunes.net/api/region/" +
+      countryCode +
+      "/all/?key=" +
+      BATTUTA_KEY +
+      "&callback=?";
+    $.getJSON(url, function(data) {
+      $("#region option").remove();
+      $('#region').append('<option value="">Please select your region</option>');
+      $.each(data, function(index, value) {
+        // APPEND OR INSERT DATA TO SELECT ELEMENT.
+        $("#region").append(
+          '<option value="' + value.region + '">' + value.region + "</option>"
+        );
+      });
+    });
+  });
+  // Region selected --> updated city list
+  $("#region").on("change", function() {
+    selectedRegion = this.options[this.selectedIndex].text;
+    // Populate country select box from battuta API
+    // countryCode = $("#country").val();
+    region = $("#region").val();
+    url =
+      "https://battuta.medunes.net/api/city/" +
+      countryCode +
+      "/search/?region=" +
+      region +
+      "&key=" +
+      BATTUTA_KEY +
+      "&callback=?";
+    $.getJSON(url, function(data) {
+      console.log(data);
+      $("#city option").remove();
+      $('#city').append('<option value="">Please select your city</option>');
+      $.each(data, function(index, value) {
+        // APPEND OR INSERT DATA TO SELECT ELEMENT.
+        $("#city").append(
+          '<option value="' + value.city + '">' + value.city + "</option>"
+        );
+      });
+    });
+  });
+  // city selected --> update location string
+  $("#city").on("change", function() {
+    selectedCity = this.options[this.selectedIndex].text;
+    $("#location").html(
+      "Locatation: Country: " +
+        selectedCountry +
+        ", Region: " +
+        selectedRegion +
+        ", City: " +
+        selectedCity
     );
   });
 });
-// Country selected --> update region list .
-$("#country").change(function() {
-  selectedCountry = this.options[this.selectedIndex].text;
-  countryCode = $("#country").val();
-  // Populate country select box from battuta API
-  url =
-    "https://battuta.medunes.net/api/region/" +
-    countryCode +
-    "/all/?key=" +
-    BATTUTA_KEY +
-    "&callback=?";
-  $.getJSON(url, function(data) {
-    $("#region option").remove();
-    $('#region').append('<option value="">Please select your region</option>');
-    $.each(data, function(index, value) {
-      // APPEND OR INSERT DATA TO SELECT ELEMENT.
-      $("#region").append(
-        '<option value="' + value.region + '">' + value.region + "</option>"
-      );
-    });
-  });
-});
-// Region selected --> updated city list
-$("#region").on("change", function() {
-  selectedRegion = this.options[this.selectedIndex].text;
-  // Populate country select box from battuta API
-  countryCode = $("#country").val();
+
+// very simple process form function to collect input values.
+function processForm() {
+  var username = (password = country = region = city = "");
+  username = $("#username").val();
+  password = $("#password").val();
+  country = $("#country").val();
   region = $("#region").val();
-  url =
-    "https://battuta.medunes.net/api/city/" +
-    countryCode +
-    "/search/?region=" +
-    region +
-    "&key=" +
-    BATTUTA_KEY +
-    "&callback=?";
-  $.getJSON(url, function(data) {
-    console.log(data);
-    $("#city option").remove();
-    $('#city').append('<option value="">Please select your city</option>');
-    $.each(data, function(index, value) {
-      // APPEND OR INSERT DATA TO SELECT ELEMENT.
-      $("#city").append(
-        '<option value="' + value.city + '">' + value.city + "</option>"
-      );
-    });
-  });
-});
-// city selected --> update location string
-$("#city").on("change", function() {
-  selectedCity = this.options[this.selectedIndex].text;
-  $("#location").php(
-    "Locatation: Country: " +
-      selectedCountry +
-      ", Region: " +
-      selectedRegion +
-      ", City: " +
-      selectedCity
-  );
-});
-});
+  city = $("#city").val();
+  if (
+    // username != "" &&
+    // password != "" &&
+    country != "" &&
+    region != "" &&
+    city != ""
+  ) {
+    $("#location").html(
+      // "Username: " +
+      //   username +
+      //   " /Password: " +
+      //   password +
+        "Locatation: Country: " +
+        country +
+        ", Region: " +
+        region +
+        ", City: " +
+        city
+    );
+  } else {
+    $("#location").html("Fill Country, Region and City to view the location");
+    return false;
+  }
+}
 
 </script>
+</body>
+
+</html>

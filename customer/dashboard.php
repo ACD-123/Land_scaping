@@ -1,6 +1,4 @@
-<?php
-include 'connection.php'
-?>
+
 <!DOCTYPE html>
 <html lang="zxx">
 
@@ -44,10 +42,10 @@ include 'connection.php'
 
 <body class="dashboard">
   
-
-<?php 
-include 'Header.php'
+<?php
+include 'Black_logo_header.php'
 ?>
+
 
 
 <section id="dashboard-main-miles">

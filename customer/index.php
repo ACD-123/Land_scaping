@@ -274,7 +274,28 @@ include 'Header.php'
       <h2>top Commercial Services</h2>
       <p>In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to 
         demonstrate the visual form of a document or a typeface without relying on meaningful content.</p>
-        <div class="col-lg-3 mb-3 mb-lg-0">
+        <?php
+                  // Include your database connection script
+                  include 'connection.php';
+
+                  // Retrieve services from the database
+                  $sql = "SELECT * FROM categories LIMIT 8";
+                  $result = $conn->query($sql);
+
+                  if ($result->num_rows > 0) {
+                      while ($row = $result->fetch_assoc()) {
+                          $service_id = $row['id'];
+                          $service_name = $row['heading'];
+                          echo '<div class="col-md-3">';
+                          // <input type="checkbox" id="commercialService1" name="commercial_service[]" value="Gardening">
+
+                          // echo '<input type="checkbox" id="commercialService' . $service_id . '" name="commercial_service[]" value="' . $service_name . '">';
+                          echo '<button for="commercialService' . $service_id . '"> ' . $service_name . '</button><br>';
+                          echo '</div>';
+                      }
+                  }
+                  ?>
+        <!-- <div class="col-lg-3 mb-3 mb-lg-0">
           <a href='#'><button>Lawn mowing</button></a>
         </div>
         <div class="col-lg-3 mb-3 mb-lg-0">
@@ -285,10 +306,10 @@ include 'Header.php'
         </div>
         <div class="col-lg-3 mb-3 mb-lg-0">
           <a href='#'><button>Spring Clean Up</button></a>
-        </div>
+        </div> -->
     </div>
 
-    <div class="row" style="padding-top: 20px;">
+    <!-- <div class="row" style="padding-top: 20px;">
         <div class="col-lg-3 mb-3 mb-lg-0">
           <a href='#'><button>Lawn mowing</button></a>
         </div>
@@ -301,7 +322,7 @@ include 'Header.php'
         <div class="col-lg-3 mb-3 mb-lg-0">
           <a href='#'><button>Spring Clean Up</button></a>
         </div>
-    </div>
+    </div> -->
   </div>
 </section>
 <!-- commercial services end -->
@@ -417,7 +438,7 @@ include 'Header.php'
 <div id="loading">Loading...</div>
 
 <!-- Table to display data -->
-<table id="employees">
+<!-- <table id="employees">
 </table>
 
 <script>
@@ -473,7 +494,7 @@ include 'Header.php'
           document.getElementById("employees").innerHTML = tab;
       }
   });
-</script>
+</script> -->
 <!-- footer end -->
 
 <!-- jQuery -->
