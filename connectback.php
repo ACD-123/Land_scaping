@@ -45,7 +45,7 @@
         <div class="row">
             <div class="col-lg-12 col-md-12">
                 <div class="card">
-                    <form id="msform" method="post" action="./provider/service-settings.php">
+                    <form id="msform" action="./provider/service-settings.php">
                             <div class="form-card" id="conn-bank">
                               <div class="row">
                                  <div class="col-lg-6 mb-6 mb-lg-0 back-sec01">

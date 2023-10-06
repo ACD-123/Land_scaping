@@ -1,5 +1,4 @@
 <?php
-
 include '../connection.php';
 error_reporting(0);
 session_start();
@@ -8,7 +7,7 @@ session_start();
 if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
     $provider_id = $_SESSION['user_id'];
 
-    // Process the form data and insert it into the provider_services table
+    // Process the form data and insert/update it into the provider_services table
     if (isset($_POST['submit'])) {
         // Retrieve selected services and commercial services
         $services = isset($_POST['services']) ? implode(', ', $_POST['services']) : '';
@@ -20,28 +19,64 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
         $working_timings_from = $_POST['working_timings_from'];
         $working_timings_to = $_POST['working_timings_to'];
 
-        // Handle image file upload (if applicable)
+        // Handle multiple image file uploads
         $image_paths = array();
 
         if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
-            $image_path = 'uploads/' . $_FILES['images']['name'][0];
-            move_uploaded_file($_FILES['images']['tmp_name'][0], $image_path);
+            foreach ($_FILES['images']['tmp_name'] as $key => $tmp_name) {
+                $image_path = 'uploads/' . $_FILES['images']['name'][$key];
+                move_uploaded_file($_FILES['images']['tmp_name'][$key], $image_path);
+                $image_paths[] = $image_path;
+            }
         } else {
-            $image_path = ''; // Set image_path to empty if no image is uploaded
+            $image_paths[] = ''; // Set image_path to empty if no images are uploaded
         }
 
-        // Prepare and execute the SQL INSERT query
-        $insertQuery = "INSERT INTO provider_services (provider_id, services, commercial_services, shop_working_day, shop_working_day_to, working_timings_from, working_timings_to, image_path, selectedPackage)
-                        VALUES ('$provider_id', '$services', '$commercialServices', '$shop_working_day', '$shop_working_day_to',  '$working_timings_from', '$working_timings_to', '$image_path', '$selectedPackage')";
+        // Check if a record for the user already exists in provider_services
+        $checkRecordQuery = "SELECT * FROM provider_services WHERE provider_id = '$provider_id'";
+        $result = $conn->query($checkRecordQuery);
 
-        if ($conn->query($insertQuery) === TRUE) {
-            // Insertion was successful
-            // You can redirect or display a success message here
-            header("Location: service-settings.php");
-            exit;
+        if ($result->num_rows > 0) {
+            // If a record exists, update it
+            $updateQuery = "UPDATE provider_services 
+                            SET services = '$services', commercial_services = '$commercialServices', 
+                            shop_working_day = '$shop_working_day', shop_working_day_to = '$shop_working_day_to', 
+                            working_timings_from = '$working_timings_from', working_timings_to = '$working_timings_to', 
+                            selectedPackage = '$selectedPackage'
+                            WHERE provider_id = '$provider_id'";
+
+            if ($conn->query($updateQuery) === TRUE) {
+                // Update was successful, you can also update the images if needed
+                // ...
+                header("Location: service-settings.php");
+                exit;
+            } else {
+                // Update failed, handle this accordingly
+                $error_message = "Error updating record: " . $conn->error;
+            }
         } else {
-            // Insertion failed, you can handle this accordingly
-            $error_message = "Error: " . $conn->error;
+            // If no record exists, insert a new record
+            $insertQuery = "INSERT INTO provider_services (provider_id, services, commercial_services, shop_working_day, shop_working_day_to, working_timings_from, working_timings_to, selectedPackage)
+                            VALUES ('$provider_id', '$services', '$commercialServices', '$shop_working_day', '$shop_working_day_to', '$working_timings_from', '$working_timings_to', '$selectedPackage')";
+
+            if ($conn->query($insertQuery) === TRUE) {
+                // Insertion was successful
+                $provider_services_id = $conn->insert_id;
+
+                // Insert the image paths into the new table with provider_services_id
+                foreach ($image_paths as $image_path) {
+                    $insertImageQuery = "INSERT INTO provider_images (provider_services_id, image_path)
+                                        VALUES ('$provider_services_id', '$image_path')";
+                    $conn->query($insertImageQuery);
+                }
+
+                // You can redirect or display a success message here
+                header("Location: service-settings.php");
+                exit;
+            } else {
+                // Insertion failed, handle this accordingly
+                $error_message = "Error inserting record: " . $conn->error;
+            }
         }
     }
 } else {
@@ -49,9 +84,8 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
     header("Location: ../signin.php");
     exit;
 }
+
 ?>
-
-
 <!-- Your HTML form here -->
 
 
@@ -459,66 +493,87 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
       </div>
 
 
-      <div class="setting-shoping-days">
-        <div class="row">
-            <h2>Shop Working Days</h2>
-            <div class="col-md-4">
-                <select name="shop_working_day">
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
-                    <option value="Saturday">Saturday</option>
-                    <option value="Sunday">Sunday</option>
-                </select>
+                <div class="setting-shoping-days">
+                  <div class="row">
+                      <h2>Shop Working Days</h2>
+                      <div class="col-md-4">
+                          <select name="shop_working_day">
+                              <option value="Monday">Monday</option>
+                              <option value="Tuesday">Tuesday</option>
+                              <option value="Wednesday">Wednesday</option>
+                              <option value="Thursday">Thursday</option>
+                              <option value="Friday">Friday</option>
+                              <option value="Saturday">Saturday</option>
+                              <option value="Sunday">Sunday</option>
+                          </select>
+                      </div>
+                      <div class="col-md-2">
+                          <h3>To</h3>
+                      </div>
+                      <div class="col-md-4">
+                          <select name="shop_working_day_to">
+                              <option value="Monday">Monday</option>
+                              <option value="Tuesday">Tuesday</option>
+                              <option value="Wednesday">Wednesday</option>
+                              <option value="Thursday">Thursday</option>
+                              <option value="Friday">Friday</option>
+                              <option value="Saturday">Saturday</option>
+                              <option value="Sunday">Sunday</option>
+                          </select>
+                      </div>
+                      <div class="col-md-2">
+                      </div>
+                  </div>
+
+                  <div class="row">
+                      <h2>Working Timings</h2>
+                      <div class="col-md-4">
+                        <input type="time" id="appt" name="working_timings_from">
+                      </div>
+                      <div class="col-md-2">
+                          <h3>From</h3>
+                      </div>
+                      <div class="col-md-4">
+                        <input type="time" id="appt" name="working_timings_to">
+                      </div>
+                      <div class="col-md-2">
+                      </div>
+                  </div>
+
+                  <div class="gallery-section-service" style="padding: 40px 0px 30px 0px;">
+              <h2>Your Past work Images</h2>
+              <div class="container">
+                  <div class="row">
+                      <div class="my-2" style="background-image: url(./images/upload.PNG);">
+                          <input type="file" class="form-control" id="images" name="images[]" onchange="preview_images();" multiple accept="image/*" />
+                      </div>
+                  </div>
+                  <div class="row" id="image_preview"></div>
+              </div>
+          </div>
+
+
+
+        <div class="next-previouss">
+          <div class="row">
+            <div class="col-md-6">
+            <a class="finish" href="#"><button type="submit" name="submit">Save</button></a>
             </div>
-            <div class="col-md-2">
-                <h3>To</h3>
+            <div class="col-md-6">
+              
             </div>
-            <div class="col-md-4">
-                <select name="shop_working_day_to">
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
-                    <option value="Saturday">Saturday</option>
-                    <option value="Sunday">Sunday</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-            </div>
+          </div>
         </div>
 
-        <div class="row">
-            <h2>Working Timings</h2>
-            <div class="col-md-4">
-              <input type="time" id="appt" name="working_timings_from">
-            </div>
-            <div class="col-md-2">
-                <h3>From</h3>
-            </div>
-            <div class="col-md-4">
-              <input type="time" id="appt" name="working_timings_to">
-            </div>
-            <div class="col-md-2">
-            </div>
-        </div>
-
-        <div class="gallery-section-service" style="padding: 40px 0px 30px 0px;">
-    <h2>Your Past work Images</h2>
-    <div class="container">
-        <div class="row">
-            <div class="my-2" style="background-image: url(./images/upload.PNG);">
-                <input type="file" class="form-control" id="images" name="images[]" onchange="preview_images();" multiple accept="image/*" />
-            </div>
-        </div>
-        <div class="row" id="image_preview"></div>
+      </div>
+      </form>
+      <!-- main-panel ends -->
     </div>
-</div>
+    <!-- page-body-wrapper ends -->
+  </div>
+  <!-- container-scroller -->
 
-<script>
+  <script>
     function preview_images() {
         var preview = document.getElementById("image_preview");
         var files = document.getElementById("images").files;
@@ -545,25 +600,6 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
         }
     }
 </script>
-
-        <div class="next-previouss">
-          <div class="row">
-            <div class="col-md-6">
-            <a class="finish" href="#"><button type="submit" name="submit">Save</button></a>
-            </div>
-            <div class="col-md-6">
-              
-            </div>
-          </div>
-        </div>
-
-      </div>
-      </form>
-      <!-- main-panel ends -->
-    </div>
-    <!-- page-body-wrapper ends -->
-  </div>
-  <!-- container-scroller -->
   <script>
 function selectPackage(packageName) {
     // Set the selected package in the hidden input field
