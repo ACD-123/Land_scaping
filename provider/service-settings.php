@@ -12,7 +12,6 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
         // Retrieve selected services and commercial services
         $services = isset($_POST['services']) ? implode(', ', $_POST['services']) : '';
         $commercialServices = isset($_POST['commercial_service']) ? implode(', ', $_POST['commercial_service']) : '';
-
         $selectedPackage = $_POST['selectedPackage'];
         $shop_working_day = $_POST['shop_working_day'];
         $shop_working_day_to = $_POST['shop_working_day_to'];
@@ -38,16 +37,39 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
 
         if ($result->num_rows > 0) {
             // If a record exists, update it
-            $updateQuery = "UPDATE provider_services 
-                            SET services = '$services', commercial_services = '$commercialServices', 
-                            shop_working_day = '$shop_working_day', shop_working_day_to = '$shop_working_day_to', 
+            $updateQuery = "UPDATE provider_services SET ";
+            
+            // Check if services were provided, and update accordingly
+            if (!empty($services)) {
+                $updateQuery .= "services = '$services', ";
+            }
+            
+            // Check if commercial services were provided, and update accordingly
+            if (!empty($commercialServices)) {
+                $updateQuery .= "commercial_services = '$commercialServices', ";
+            }
+
+            $updateQuery .= "shop_working_day = '$shop_working_day', shop_working_day_to = '$shop_working_day_to', 
                             working_timings_from = '$working_timings_from', working_timings_to = '$working_timings_to', 
-                            selectedPackage = '$selectedPackage'
-                            WHERE provider_id = '$provider_id'";
+                            selectedPackage = '$selectedPackage' WHERE provider_id = '$provider_id'";
 
             if ($conn->query($updateQuery) === TRUE) {
                 // Update was successful, you can also update the images if needed
                 // ...
+
+                // Check if there are new images to insert
+                if (!empty($image_paths[0])) {
+                    // Retrieve provider_services_id from the existing record
+                    $provider_services_id = $result->fetch_assoc()['id'];
+                    
+                    // Insert the image paths into the new table with provider_services_id
+                    foreach ($image_paths as $image_path) {
+                        $insertImageQuery = "INSERT INTO provider_images (provider_services_id, image_path)
+                                            VALUES ('$provider_services_id', '$image_path')";
+                        $conn->query($insertImageQuery);
+                    }
+                }
+
                 header("Location: service-settings.php");
                 exit;
             } else {
@@ -56,26 +78,31 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
             }
         } else {
             // If no record exists, insert a new record
-            $insertQuery = "INSERT INTO provider_services (provider_id, services, commercial_services, shop_working_day, shop_working_day_to, working_timings_from, working_timings_to, selectedPackage)
+            if (!empty($services) || !empty($commercialServices)) {
+                $insertQuery = "INSERT INTO provider_services (provider_id, services, commercial_services, shop_working_day, shop_working_day_to, working_timings_from, working_timings_to, selectedPackage)
                             VALUES ('$provider_id', '$services', '$commercialServices', '$shop_working_day', '$shop_working_day_to', '$working_timings_from', '$working_timings_to', '$selectedPackage')";
 
-            if ($conn->query($insertQuery) === TRUE) {
-                // Insertion was successful
-                $provider_services_id = $conn->insert_id;
+                if ($conn->query($insertQuery) === TRUE) {
+                    // Insertion was successful
+                    $provider_services_id = $conn->insert_id;
 
-                // Insert the image paths into the new table with provider_services_id
-                foreach ($image_paths as $image_path) {
-                    $insertImageQuery = "INSERT INTO provider_images (provider_services_id, image_path)
-                                        VALUES ('$provider_services_id', '$image_path')";
-                    $conn->query($insertImageQuery);
+                    // Check if there are new images to insert
+                    if (!empty($image_paths[0])) {
+                        // Insert the image paths into the new table with provider_services_id
+                        foreach ($image_paths as $image_path) {
+                            $insertImageQuery = "INSERT INTO provider_images (provider_services_id, image_path)
+                                                VALUES ('$provider_services_id', '$image_path')";
+                            $conn->query($insertImageQuery);
+                        }
+                    }
+
+                    // You can redirect or display a success message here
+                    header("Location: service-settings.php");
+                    exit;
+                } else {
+                    // Insertion failed, handle this accordingly
+                    $error_message = "Error inserting record: " . $conn->error;
                 }
-
-                // You can redirect or display a success message here
-                header("Location: service-settings.php");
-                exit;
-            } else {
-                // Insertion failed, handle this accordingly
-                $error_message = "Error inserting record: " . $conn->error;
             }
         }
     }
@@ -84,10 +111,8 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
     header("Location: ../signin.php");
     exit;
 }
-
 ?>
 <!-- Your HTML form here -->
-
 
 
 
@@ -303,86 +328,9 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
       </div>
       <!-- partial -->
       <!-- partial:partials/_sidebar.php -->
-      <nav class="sidebar sidebar-offcanvas" id="sidebar">
-        <ul class="nav">
-          <li class="nav-item">
-            <a class="nav-link" href="dashboard.php">
-              <i class="mdi mdi-view-dashboard menu-icon"></i>
-              <span class="menu-title">Dashboard</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="order-in-progress.php">
-              <i class="menu-icon mdi mdi-format-list-bulleted"></i>
-              <span class="menu-title">In Progress Orders</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="schedule-order.php">
-              <i class="menu-icon mdi mdi-calendar"></i>
-              <span class="menu-title">Scheduled Orders</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="complete-orders.php">
-              <i class="menu-icon mdi mdi-file-document-box"></i>
-              <span class="menu-title">Completed Orders</span>
-
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="new-offers.php">
-              <i class="menu-icon mdi mdi-label-outline"></i>
-              <span class="menu-title">New Offers</span>
-
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="chats.php">
-              <i class="menu-icon mdi mdi-chat"></i>
-              <span class="menu-title">Chats</span>
-
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="replied-offers.php">
-              <i class="menu-icon mdi mdi-account-check"></i>
-              <span class="menu-title">Replied Offers</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="rating-reviews.php">
-              <i class="menu-icon mdi mdi-star-outline"></i>
-              <span class="menu-title">Ratings & Reviews</span>
-            </a>
-          </li>
-          <li class="nav-item active">
-            <a class="nav-link" href="service-settings.php">
-              <i class="menu-icon mdi mdi-settings"></i>
-              <span class="menu-title">Service Settings</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="profilesetting.php">
-              <i class="menu-icon mdi mdi-account"></i>
-              <span class="menu-title">Profile Settings</span>
-            </a>
-          </li>
-          <li class="nav-item earning">
-            <a class="nav-link" href="earning-withdraws.php">
-              <i class="menu-icon mdi mdi-account-card-details"></i>
-              <span class="menu-title">Earning & Withdrawals </span>
-            </a>
-          </li>
-
-          <li class="nav-item signup">
-            <a class="nav-link" href="#">
-              
-              <span class="menu-title">Signout</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
+      <?php
+      include 'SideMenu.php'
+      ?>
       <!-- partial -->
 
     <div class="main-panel">

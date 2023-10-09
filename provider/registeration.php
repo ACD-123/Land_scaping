@@ -138,7 +138,7 @@ $conn->close();
 
 <body id="regis-page">
     <section id="sign-up-form">
-            <div class="row justify-content-center h-100"> 
+            <div class="row justify-content-center h-100" style="display: -webkit-inline-box;"> 
 
                 <div class="col-lg-7 mb-3" style="padding: 100px;">
 

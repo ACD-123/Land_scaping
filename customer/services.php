@@ -123,7 +123,7 @@ if ($result->num_rows > 0) {
         echo '</div>';
     }
 } else {
-    echo "No services found.";
+    echo "No Providers found.";
 }
 ?>
 

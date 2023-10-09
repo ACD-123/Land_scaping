@@ -31802,7 +31802,7 @@ span.point.activestep span.step-title {
   font-weight: 500;
   line-height: 60px;
   letter-spacing: 0.05em;
-  color: #70BE44;
+  color: #70BE44 !important;
   text-decoration: wavy;
 }
 .shop-working-days .headingsec a button {

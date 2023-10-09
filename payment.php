@@ -65,19 +65,18 @@
                                     <label for="ccn">Credit Card Number:</label>
                                     <input id="ccn" type="tel" inputmode="numeric" pattern="[0-9\s]{13,19}" 
                                      autocomplete="cc-number" maxlength="16" placeholder="xxxx xxxx xxxx xxxx">
-
                                      <!-- EXP AND CVC ROW -->
-                                  <div class="row">
-                                    <div class="col-lg-6 mb-6 mb-lg-0">
-                                      <label for="ccn">Exp Date</label>
-                                            <input class="cc-expires" maxlength="4" name="credit-expires" pattern="\d*" placeholder="MM / YY" type="tel" />
-                                    </div>
+                                    <div class="row">
+                                      <div class="col-lg-6 mb-6 mb-lg-0">
+                                        <label for="ccn">Exp Date</label>
+                                              <input class="cc-expires" maxlength="4" name="credit-expires" pattern="\d*" placeholder="MM / YY" type="tel" />
+                                      </div>
 
-                                    <div class="col-lg-6 mb-6 mb-lg-0 ffa">
-                                      <label for="ccn">CVC</label>
-                                      <input class="cc-cvc" maxlength="3" name="credit-cvc" pattern="\d*" placeholder="CVC" type="tel" />
+                                      <div class="col-lg-6 mb-6 mb-lg-0 ffa">
+                                        <label for="ccn">CVC</label>
+                                        <input class="cc-cvc" maxlength="3" name="credit-cvc" pattern="\d*" placeholder="CVC" type="tel" />
+                                      </div>
                                     </div>
-                                  </div>
                                      <!-- EXP AND CVC ROW END -->
                                      <input name="phone" placeholder="Phone No." type="text22" />
                                   </div>
@@ -90,106 +89,73 @@
                                       <li data-target="#carouselExampleIndicators" data-slide-to="2"></li>
                                     </ol>
                                     <div class="carousel-inner">
-                                      <div class="carousel-item active">
-                                        <div id="pay-ca" class="package-box">
-                                          <div class="pack-img">
-                                              <img src="./assets/images/becomesprovider/plimg02.png">
-                                          </div>
-                                          <div class="package-head">
-                                              <h1>Basic Seller Package</h1>
-                                              <p>Monthly</p>
-                                          </div>
-                                          <div class="pack-para">
-                                              <ul>
-                                                <li>
-                                                  Lorem Ipsum is simply dummy text of the printing
-                                                </li>
-                                                <li>
-                                                  Lorem Ipsum is simply dummy text of the printing
-                                                </li>
-                                                <li>
-                                                  Lorem Ipsum is simply dummy text of the printing
-                                                </li>
-                                                <li>
-                                                  Lorem Ipsum is simply dummy text of the printing
-                                                </li>
-                                              </ul>
-                                          </div>
-                                          <div class="package-price">
-                                            <h1>$ 4.99</h1>
-                                          </div>
-                                          <div class="package-btn">
-                                            <a href="#">Subscribe</a>
-                                          </div>
-                                      </div>
-                                      </div>
-                                      <div class="carousel-item">
-                                        <div id="pay-ca" class="package-box">
-                                          <div class="pack-img">
-                                              <img src="./assets/images/becomesprovider/plimg02.png">
-                                          </div>
-                                          <div class="package-head">
-                                              <h1>Basic gold Package</h1>
-                                              <p>Monthly</p>
-                                          </div>
-                                          <div class="pack-para">
-                                              <ul>
-                                                <li>
-                                                  Lorem Ipsum is simply dummy text of the printing
-                                                </li>
-                                                <li>
-                                                  Lorem Ipsum is simply dummy text of the printing
-                                                </li>
-                                                <li>
-                                                  Lorem Ipsum is simply dummy text of the printing
-                                                </li>
-                                                <li>
-                                                  Lorem Ipsum is simply dummy text of the printing
-                                                </li>
-                                              </ul>
-                                          </div>
-                                          <div class="package-price">
-                                            <h1>$ 4.99</h1>
-                                          </div>
-                                          <div class="package-btn">
-                                            <a href="#">Subscribe</a>
-                                          </div>
-                                      </div>
-                                      </div>
-                                      <div class="carousel-item">
-                                        <div id="pay-ca" class="package-box">
-                                          <div class="pack-img">
-                                              <img src="./assets/images/becomesprovider/plimg02.png">
-                                          </div>
-                                          <div class="package-head">
-                                              <h1>Basic Seller Package</h1>
-                                              <p>Monthly</p>
-                                          </div>
-                                          <div class="pack-para">
-                                              <ul>
-                                                <li>
-                                                  Lorem Ipsum is simply dummy text of the printing
-                                                </li>
-                                                <li>
-                                                  Lorem Ipsum is simply dummy text of the printing
-                                                </li>
-                                                <li>
-                                                  Lorem Ipsum is simply dummy text of the printing
-                                                </li>
-                                                <li>
-                                                  Lorem Ipsum is simply dummy text of the printing
-                                                </li>
-                                              </ul>
-                                          </div>
-                                          <div class="package-price">
-                                            <h1>$ 4.99</h1>
-                                          </div>
-                                          <div class="package-btn">
-                                            <a href="#">Subscribe</a>
-                                          </div>
-                                      </div>
-                                      </div>
-                                    </div>
+    <?php
+    // Include your database connection script
+    include 'connection.php';
+
+    // Query to retrieve packages from the database
+    $selectQuery = "SELECT * FROM packages";
+    $result = $conn->query($selectQuery);
+
+    $firstItem = true; // Flag to track the first item in the carousel
+
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $package_name = $row['package_name'];
+            $package_limit = $row['package_limit'];
+            $package_description = $row['package_description'];
+            $package_price = $row['package_price'];
+            $package_status = $row['package_status'];
+
+            // Determine whether this is the first item and add the "active" class accordingly
+            $activeClass = $firstItem ? 'active' : '';
+
+            echo '<div class="carousel-item ' . $activeClass . '">';
+            echo '<div id="pay-ca" class="package-box">';
+            echo '<div class="pack-img">';
+            echo '<img src="./assets/images/becomesprovider/plimg01.png">';
+            echo '</div>';
+            echo '<div class="package-head">';
+            echo '<h1>' . $package_name . '</h1>';
+            echo '<p>' . $package_limit . '</p>';
+            echo '</div>';
+            echo '<div class="pack-para">';
+            echo '<ul>';
+            echo '<li>' . $package_description . '</li>';
+            echo '</ul>';
+            echo '</div>';
+            echo '<div class="package-price">';
+            echo '<h1>$ ' . $package_price . '</h1>';
+            echo '</div>';
+
+            // Check if the package is enabled
+            if ($package_status === 'Enabled') {
+                echo '<div class="package-btn">';
+                echo '<a href="./provider/registeration.php">Subscribe</a>';
+                echo '</div>';
+            } else {
+                // Display a message indicating that the package is disabled
+                echo '<div class="package-btn">';
+                echo '<p>Package is disabled</p>';
+                echo '</div>';
+            }
+
+            echo '</div>';
+            echo '</div>';
+
+            // Set the flag to false after the first item
+            $firstItem = false;
+        }
+    } else {
+        // Handle the case when no packages are found
+        echo '<p>No packages found.</p>';
+    }
+
+    // Close the database connection
+    $conn->close();
+    ?>
+</div>
+
                                     <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
                                       <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                                       <span class="sr-only">Previous</span>
@@ -199,8 +165,6 @@
                                       <span class="sr-only">Next</span>
                                     </a>
                                   </div>
-                                   
-    
                                   </div>
                                  </div>
                                 </div>

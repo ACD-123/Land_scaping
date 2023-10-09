@@ -63,7 +63,7 @@ include 'Header.php';
 
 <!-- LAWN MOVING SECTION START -->
 <section id="lawnmoving2">
-  <div class="row">
+  <div class="row align-items-center">
     <div class="col-lg-6 mb-6 mb-lg-0">
       <img src="./assets/images/lawnmoving/lawnmoving2.png" width="100%"/>
     </div>
@@ -106,104 +106,64 @@ include 'Header.php';
             </div>
         </div>
         <div class="row">
-            <div class="col-lg-4 mb-4 mb-lg-0">
-                <div class="package-box">
-                    <div class="pack-img">
-                        <img src="./assets/images/becomesprovider/plimg01.png">
-                    </div>
-                    <div class="package-head">
-                        <h1>Basic Seller Package</h1>
-                        <p>Monthly</p>
-                    </div>
-                    <div class="pack-para">
-                        <ul>
-                          <li>
-                            Lorem Ipsum is simply dummy text of the printing
-                          </li>
-                          <li>
-                            Lorem Ipsum is simply dummy text of the printing
-                          </li>
-                          <li>
-                            Lorem Ipsum is simply dummy text of the printing
-                          </li>
-                          <li>
-                            Lorem Ipsum is simply dummy text of the printing
-                          </li>
-                        </ul>
-                    </div>
-                    <div class="package-price">
-                      <h1>$ 4.99</h1>
-                    </div>
-                    <div class="package-btn">
-                      <a href="#">Subscribe</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4 mb-4 mb-lg-0">
-              <div class="package-box">
-                <div class="pack-img">
-                    <img src="./assets/images/becomesprovider/plimg02.png">
-                </div>
-                <div class="package-head">
-                    <h1>Basic Seller Package</h1>
-                    <p>Monthly</p>
-                </div>
-                <div class="pack-para">
-                    <ul>
-                      <li>
-                        Lorem Ipsum is simply dummy text of the printing
-                      </li>
-                      <li>
-                        Lorem Ipsum is simply dummy text of the printing
-                      </li>
-                      <li>
-                        Lorem Ipsum is simply dummy text of the printing
-                      </li>
-                      <li>
-                        Lorem Ipsum is simply dummy text of the printing
-                      </li>
-                    </ul>
-                </div>
-                <div class="package-price">
-                  <h1>$ 4.99</h1>
-                </div>
-                <div class="package-btn">
-                  <a href="#">Subscribe</a>
-                </div>
-              </div>
-            </div>
-            <div class="col-lg-4 mb-4 mb-lg-0">
-              <div class="package-box">
-                <div class="pack-img">
-                    <img src="./assets/images/becomesprovider/plimg03.png">
-                </div>
-                <div class="package-head">
-                    <h1>Basic Seller Package</h1>
-                    <p>Monthly</p>
-                </div>
-                <div class="pack-para">
-                    <ul>
-                      <li>
-                        Lorem Ipsum is simply dummy text of the printing
-                      </li>
-                      <li>
-                        Lorem Ipsum is simply dummy text of the printing
-                      </li>
-                      <li>
-                        Lorem Ipsum is simply dummy text of the printing
-                      </li>
-                      <li>
-                        Lorem Ipsum is simply dummy text of the printing
-                      </li>
-                    </ul>
-                </div>
-                <div class="package-price">
-                  <h1>$ 4.99</h1>
-                </div>
-                <div class="package-btn">
-                  <a href="#">Subscribe</a>
-                </div>
-            </div>
+        <?php
+              // Include your database connection script
+              include 'connection.php';
+
+              // Query to retrieve packages from the database
+              $selectQuery = "SELECT * FROM packages";
+              $result = $conn->query($selectQuery);
+
+              if ($result->num_rows > 0) {
+                  while ($row = $result->fetch_assoc()) {
+                      $package_name = $row['package_name'];
+                      $package_limit = $row['package_limit'];
+                      $package_description = $row['package_description'];
+                      $package_price = $row['package_price'];
+                      $package_status = $row['package_status'];
+
+                      echo '<div class="col-lg-4 mb-4 mb-lg-0">';
+                      echo '<div class="package-box">';
+                      echo '<div class="pack-img">';
+                      echo '<img src="./assets/images/becomesprovider/plimg01.png">';
+                      echo '</div>';
+                      echo '<div class="package-head">';
+                      echo '<h1>' . $package_name . '</h1>';
+                      echo '<p>' . $package_limit . '</p>';
+                      echo '</div>';
+                      echo '<div class="pack-para">';
+                      echo '<ul>';
+                      echo '<li>'. $package_description .'</li>';
+                      echo '</ul>';
+                      echo '</div>';
+                      echo '<div class="package-price">';
+                      echo '<h1>$ ' . $package_price . '</h1>';
+                      echo '</div>';
+                      
+                      // Check if the package is enabled
+                      if ($package_status === 'Enabled') {
+                          echo '<div class="package-btn">';
+                          echo '<a href="./provider/registeration.php">Subscribe</a>';
+                          echo '</div>';
+                      } else {
+                          // Display a message indicating that the package is disabled
+                          echo '<div class="package-btn">';
+                          echo '<p>Package is disabled</p>';
+                          echo '</div>';
+                      }
+
+                      echo '</div>';
+                      echo '</div>';
+                  }
+              } else {
+                  // Handle the case when no packages are found
+                  echo '<p>No packages found.</p>';
+              }
+
+              // Close the database connection
+              $conn->close();
+?>
+
             </div>
         </div>
     </div>
@@ -222,74 +182,55 @@ include 'Header.php';
     </div>
   </div>
   
-  <div class="col-lg-4 mb-4 mb-lg-0">
-    <div class="provider-card">
-      <img src="./assets/images/featured-provider/feature.png" width="100%"/>
-      <div class="feature-info-box">
-        <ul class="featurelist" style="padding: 0px; margin: 0px;">
-          <li><h2>John Doe</h2></li>
-          <li class="prc"><i class="fa fa-comment" aria-hidden="true"></i> Contact for pricing</li>
-        </ul>
-        <p>Lorem Ipsum is simply dummy text of the printing and typesetting 
-          industry. Lorem Ipsum has been the industry's standard dummy text 
-          ever since the 1500s</p>
-          <ul class="featurelist-2">
-            <li><i class="fa fa-user" aria-hidden="true"></i> Worker</li>
-            <li class="prc2"><b>4.0</b> <span>(10) </span><img src="./assets/images/featured-provider/star.png"/></li>
-          </ul>
-          <ul class="featurelist-3">
-            <li><i class="fa fa-trophy" aria-hidden="true"></i>Hired 11 Times</li>
-            <li class="prc3"><i class="fa fa-location-arrow" aria-hidden="true"></i> Houston, Texas</li>
-          </ul>
-      </div>
-    </div>
-  </div>
+  <?php
+// Include your database connection script
+include 'connection.php';
 
-  <div class="col-lg-4 mb-4 mb-lg-0">
-    <div class="provider-card">
-      <img src="./assets/images/featured-provider/feature.png" width="100%"/>
-      <div class="feature-info-box">
-        <ul class="featurelist" style="padding: 0px; margin: 0px;">
-          <li><h2>John Doe</h2></li>
-          <li class="prc"><i class="fa fa-comment" aria-hidden="true"></i> Contact for pricing</li>
-        </ul>
-        <p>Lorem Ipsum is simply dummy text of the printing and typesetting 
-          industry. Lorem Ipsum has been the industry's standard dummy text 
-          ever since the 1500s</p>
-          <ul class="featurelist-2">
-            <li><i class="fa fa-user" aria-hidden="true"></i> Worker</li>
-            <li class="prc2"><b>4.0</b> <span>(10) </span><img src="./assets/images/featured-provider/star.png"/></li>
-          </ul>
-          <ul class="featurelist-3">
-            <li><i class="fa fa-trophy" aria-hidden="true"></i>Hired 11 Times</li>
-            <li class="prc3"><i class="fa fa-location-arrow" aria-hidden="true"></i> Houston, Texas</li>
-          </ul>
-      </div>
-    </div>
-  </div>
+// Retrieve services from the database
+$sql = "SELECT * FROM provider_registration where role_id = 2 limit 3";
+$result = $conn->query($sql);
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $fullname = $row['fullname'];
+        $country = $row['country'];
+        $city = $row['city'];
+        $profile_picture = $row['profile_picture'];
+        $provider_id = $row['id']; // Added to get the provider ID
 
-  <div class="col-lg-4 mb-4 mb-lg-0">
-    <div class="provider-card">
-      <img src="./assets/images/featured-provider/feature.png" width="100%"/>
-      <div class="feature-info-box">
-        <ul class="featurelist" style="padding: 0px; margin: 0px;">
-          <li><h2>John Doe</h2></li>
-          <li class="prc"><i class="fa fa-comment" aria-hidden="true"></i> Contact for pricing</li>
-        </ul>
-        <p>Lorem Ipsum is simply dummy text of the printing and typesetting 
-          industry. Lorem Ipsum has been the industry's standard dummy text 
-          ever since the 1500s</p>
-          <ul class="featurelist-2">
-            <li><i class="fa fa-user" aria-hidden="true"></i> Worker</li>
-            <li class="prc2"><b>4.0</b> <span>(10) </span><img src="./assets/images/featured-provider/star.png"/></li>
-          </ul>
-          <ul class="featurelist-3">
-            <li><i class="fa fa-trophy" aria-hidden="true"></i>Hired 11 Times</li>
-            <li class="prc3"><i class="fa fa-location-arrow" aria-hidden="true"></i> Houston, Texas</li>
-          </ul>
-      </div>
-    </div>
-  </div>
+        // Wrap the provider card with a link to provider.php
+        echo '<div class="col-lg-4 mb-4 mb-lg-0">';
+        echo '<a href="./provider/registeration.php">';
+        echo '<div class="provider-card">';
+        echo '<div style="width:100%; height:200px;">';
+        echo '<img style="object-fit:contain; width:100%; height:100%" src="./provider/' . $profile_picture . '" width="100%"/>';
+        echo '</div>';
+        echo '<div class="feature-info-box">';
+        echo '<div style="display:flex; justify-content:space-between; align-items:center">';
+        echo '<h4>' . $fullname . '</h4>';
+        echo '<h6 style="color:#7A7A7A"><i class="fa fa-comment" aria-hidden="true" style="color:#70be44"></i> Contact for pricing</h6>';
+        echo '</div>';
+        echo '<p>Lorem Ipsum is simply dummy text of the printing and typesetting ';
+        echo 'industry. Lorem Ipsum has been the industry\'s standard dummy text ';
+        echo 'ever since the 1500s</p>';
+        echo '<ul class="featurelist-2">';
+        echo '<li><i class="fa fa-user" aria-hidden="true"></i> Worker</li>';
+        echo '<li class="prc2"><b>4.0</b> <span>(10) </span><img src="./customer/images/featured-provider/star.png"/></li>';
+        echo '</ul>';
+        echo '<ul class="featurelist-3">';
+        echo '<li><i class="fa fa-trophy" aria-hidden="true"></i>Hired 11 Times</li>';
+        echo '<li class="prc3"><i class="fa fa-location-arrow" aria-hidden="true"></i> ' . $city . '</li>';
+        echo '</ul>';
+        echo '</div>';
+        echo '</div>';
+        echo '</a>';
+        echo '</div>';
+    }
+} else {
+    echo "No services found.";
+}
+?>
+
+  
 
 </div>
 </div>

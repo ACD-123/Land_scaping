@@ -9320,6 +9320,7 @@ progress {
 }
 
 .row {
+  align-items: center;
   --bs-gutter-x: 30px;
   --bs-gutter-y: 0;
   display: flex;
@@ -9328,7 +9329,16 @@ progress {
   margin-right: calc(-.5 * var(--bs-gutter-x));
   margin-left: calc(-.5 * var(--bs-gutter-x));
 }
-
+.readbtn button {
+  background: #70BE44;
+  padding: 13px 54px;
+  border: 1px solid #70be44;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 21px;
+  font-weight: 600;
+  font-family: 'Cairo';
+}
 .row > * {
   flex-shrink: 0;
   width: 100%;
@@ -33781,6 +33791,28 @@ button.messagebutton {
     border-radius: 10px;
     font-size: 14px;
   }
+  .services-edit .pack input{
+    width: 100%;
+    height: 34px;
+    border: 1px solid gray;
+    /* padding: 21px 20px; */
+    margin-bottom: 10px;
+    background: #E6E6E691;
+    border-radius: 10px;
+    font-size: 14px;
+  }
+  .services-edit .pack button{
+    background: #70BE44 !important;
+    position: relative;
+    font-weight: bold;
+    font-size: 13px;
+  }
+  .services-edit .pack textarea{
+    font-size: 14px;
+  }
+  .edit-packages-section{
+    margin-top: 30px;
+  }
   .services-edit label{
     font-size: 14px;
     font-weight: 600;
@@ -33813,4 +33845,11 @@ button.messagebutton {
     
     display: block;
     overflow: auto;
+  }
+
+  .radio-package{
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    text-align: center;
   }

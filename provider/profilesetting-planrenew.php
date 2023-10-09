@@ -210,79 +210,9 @@
       </div>
       <!-- partial -->
       <!-- partial:partials/_sidebar.php -->
-      <nav class="sidebar sidebar-offcanvas" id="sidebar">
-        <ul class="nav">
-          <li class="nav-item">
-            <a class="nav-link" href="dashboard.php">
-              <i class="mdi mdi-view-dashboard menu-icon"></i>
-              <span class="menu-title">Dashboard</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="order-in-progress.php">
-              <i class="menu-icon mdi mdi-format-list-bulleted"></i>
-              <span class="menu-title">In Progress Orders</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="schedule-order.php">
-              <i class="menu-icon mdi mdi-calendar"></i>
-              <span class="menu-title">Scheduled Orders</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="complete-orders.php">
-              <i class="menu-icon mdi mdi-file-document-box"></i>
-              <span class="menu-title">Completed Orders</span>
-
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="new-offers.php">
-              <i class="menu-icon mdi mdi-label-outline"></i>
-              <span class="menu-title">New Offers</span>
-
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="replied-offers.php">
-              <i class="menu-icon mdi mdi-account-check"></i>
-              <span class="menu-title">Replied Offers</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="rating-reviews.php">
-              <i class="menu-icon mdi mdi-star-outline"></i>
-              <span class="menu-title">Ratings & Reviews</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="service-settings.php">
-              <i class="menu-icon mdi mdi-settings"></i>
-              <span class="menu-title">Service Settings</span>
-            </a>
-          </li>
-          <li class="nav-item active">
-            <a class="nav-link" href="profilesetting.php">
-              <i class="menu-icon mdi mdi-account"></i>
-              <span class="menu-title">Profile Settings</span>
-            </a>
-          </li>
-          <li class="nav-item earning">
-            <a class="nav-link" href="earning-withdraws.php">
-              <i class="menu-icon mdi mdi-account-card-details"></i>
-              <span class="menu-title">Earning & Withdrawals </span>
-            </a>
-          </li>
-
-          <li class="nav-item signup">
-            <a class="nav-link" href="#">
-              
-              <span class="menu-title">Signout</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
+      <?php
+      include 'SideMenu.php'
+      ?>
       <!-- partial -->
       <div class="main-panel">
         <h2 style="color: #70BE44;"><b>Profile Settings</b></h2>
@@ -351,7 +281,61 @@
             color: #215B00;">Select your Plan</h1>
         </div>
         <div class="row" style="padding: 30px 0px;">
-            <div class="col-md-4">
+        <?php
+              // Include your database connection script
+              include 'connection.php';
+
+              // Query to retrieve packages from the database
+              $selectQuery = "SELECT * FROM packages";
+              $result = $conn->query($selectQuery);
+
+              if ($result->num_rows > 0) {
+                  while ($row = $result->fetch_assoc()) {
+                      $package_name = $row['package_name'];
+                      $package_limit = $row['package_limit'];
+                      $package_description = $row['package_description'];
+                      $package_price = $row['package_price'];
+                      $package_status = $row['package_status'];
+
+                      echo '<div class="col-lg-4 mb-4 mb-lg-0">';
+                      echo '<div class="price-plan-subscribe">';
+                      echo '<img src="./images/priceplans/1.png" width="auto"/>';
+                      echo '<h1>' . $package_name . '</h1>';
+                      echo '<p>' . $package_limit . '</p>';
+
+                      echo '<ul>';
+                      echo '<li>'. $package_description .'</li>';
+                      echo '</ul>';
+
+                      echo '<div class="price mb-3">';
+                      echo '<h1>$ ' . $package_price . '</h1>';
+                      echo '</div>';
+                      
+                      // Check if the package is enabled
+                      if ($package_status === 'Enabled') {
+                          echo '<a class="subscribe-button ">';
+                          echo '<button>Subscribe</button>';
+                          echo '</a>';
+                      } else {
+                          // Display a message indicating that the package is disabled
+                          echo '<div class="package-btn">';
+                          echo '<p>Package is disabled</p>';
+                          echo '</div>';
+                      }
+
+                      echo '</div>';
+                      echo '</div>';
+                  }
+              } else {
+                  // Handle the case when no packages are found
+                  echo '<p>No packages found.</p>';
+              }
+
+              // Close the database connection
+              $conn->close();
+?>
+
+            <!-- <div class="col-md-4">
                 <div class="price-plan-subscribe">
                     <img src="./images/priceplans/1.png" width="auto"/>
                     <h2>Basic Seller Package</h2>
@@ -455,7 +439,7 @@
                         </a>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
 

@@ -79,7 +79,7 @@ include '../connection.php';
             <!-- profile image end -->
             <ul class="dropdown-menu dropdown-menu-right" style="position: absolute;left: -43px;"
               aria-labelledby="UserDropdown">
-              <li><a class="dropdown-item" href="#">Profile</a></li>
+              <li><a class="dropdown-item" href="profilesetting.php">Profile</a></li>
               <li><a class="dropdown-item" href="../logout.php">Logout</a></li>
             </ul>
           </div>
