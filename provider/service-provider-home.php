@@ -517,7 +517,8 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
             </div>
             <div class="button-container next-previouss">
             <a type="button" onclick="showTab(2)">Previous</a>
-            <a href="javascript:void(0);" onclick="showSuccessPopupAndRedirect();" class="finish">Finish</a>
+            <a class="finish" onclick="showSuccessPopupAndRedirect();" href="javascript:void(0);"><button type="submit" name="submit">Save</button></a>
+            <!-- <a href="javascript:void(0);" class="finish">Finish</a> -->
           </div>
           </div>
         </div>

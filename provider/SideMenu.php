@@ -64,7 +64,7 @@
           </li>
 
           <li class="nav-item signup">
-            <a class="nav-link" href="#">
+            <a class="nav-link" href="../logout.php">
               
               <span class="menu-title">Signout</span>
             </a>

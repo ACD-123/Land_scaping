@@ -21,6 +21,7 @@ if (isset($_POST['update_service'])) {
     $service_id = $_POST['service_id'];
     $heading = $_POST['heading'];
     $content = $_POST['content'];
+    $price = $_POST['price'];
 
     // Upload image and get its path (if a new image is selected)
     $new_image = $_FILES['new_image']['name'];
@@ -35,14 +36,14 @@ if (isset($_POST['update_service'])) {
             exit;
         } elseif (move_uploaded_file($_FILES['new_image']['tmp_name'], $target_file)) {
             // Update the service in the database with the new image
-            $update_sql = "UPDATE categories SET image = '$new_image', heading = '$heading', content = '$content' WHERE id = $service_id";
+            $update_sql = "UPDATE categories SET image = '$new_image', heading = '$heading', content = '$content', price = '$price' WHERE id = $service_id";
         } else {
             $error_message = "Error uploading image.";
             exit;
         }
     } else {
         // Update the service in the database without changing the image
-        $update_sql = "UPDATE categories SET heading = '$heading', content = '$content' WHERE id = $service_id";
+        $update_sql = "UPDATE categories SET heading = '$heading', content = '$content', price = '$price' WHERE id = $service_id";
     }
 
     if ($conn->query($update_sql) === TRUE) {
@@ -56,6 +57,7 @@ if (isset($_POST['update_service'])) {
 if (isset($_POST['add_services'])) {
     $heading = $_POST['heading'];
     $content = $_POST['content'];
+    $price = $_POST['price'];
 
     // Upload image and get its path
     $image = $_FILES['image']['name'];
@@ -68,7 +70,7 @@ if (isset($_POST['add_services'])) {
         $error_message = "Invalid image file.";
     } elseif (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
         // Insert data into the services table
-        $sql = "INSERT INTO categories (image, heading, content) VALUES ('$image', '$heading', '$content')";
+        $sql = "INSERT INTO categories (image, heading, content, price ) VALUES ('$image', '$heading', '$content', '$price')";
         if ($conn->query($sql) === TRUE) {
             $error_message = "Service added successfully.";
         } else {
@@ -145,6 +147,10 @@ $result = $conn->query($sql);
                 <label for="content" class="form-label">Content:</label>
                 <textarea class="form-control" name="content" rows="4" required></textarea>
             </div>
+            <div class="mb-3">
+                <label for="price" class="form-label">Price:</label>
+                <input class="form-control" name="price" rows="4" required>
+            </div>
             <button type="submit" name="add_services" class="btn btn-primary">Add Service</button>
         </form>
       </div>
@@ -160,23 +166,25 @@ $result = $conn->query($sql);
             if ($result->num_rows > 0) {
                 echo '<table class="table">';
                 echo '<thead>';
-                echo '<tr><th>Image</th><th>Heading</th><th>Content</th><th>Actions</th></tr>';
+                echo '<tr><th>Image</th><th>Heading</th><th>Content</th><th>Price</th><th>Actions</th></tr>';
                 echo '</thead>';
                 echo '<tbody>';
                 while ($row = $result->fetch_assoc()) {
-                    echo '<tr>';
-                    echo "<td><img src='uploads/{$row['image']}' alt='{$row['heading']}' width='100'></td>";
-                    echo "<td><span data-id='{$row['id']}'>{$row['heading']}</span></td>";
-                    echo "<td><span data-id='{$row['id']}'>{$row['content']}</span></td>";
-                    echo '<td class="btn-td">';
-                    echo '<button type="button" class="btn btn-primary" onclick="openEditModal(' . $row['id'] . ')">Edit</button>';
-                    echo '<form method="post" action="">';
-                    echo '<input type="hidden" name="service_id" value="' . $row['id'] . '">';
-                    echo '<button type="submit" name="delete_service" class="btn btn-danger">Delete</button>';
-                    echo '</form>';
-                    echo '</td>';
-                    echo '</tr>';
-                }
+                  echo '<tr data-service-id="' . $row['id'] . '">';
+                  echo "<td><img src='uploads/{$row['image']}' alt='{$row['heading']}' width='100'></td>";
+                  echo '<td class="editable" data-field="heading">' . $row['heading'] . '</td>';
+                  echo '<td class="editable" data-field="content">' . $row['content'] . '</td>';
+                  echo '<td class="editable" data-field="price">' . $row['price'] . '</td>';
+                  echo '<td class="btn-td">';
+                  echo '<button type="button" class="btn btn-primary" onclick="openEditModal(' . $row['id'] . ')">Edit</button>';
+                  echo '<form method="post" action="">';
+                  echo '<input type="hidden" name="service_id" value="' . $row['id'] . '">';
+                  echo '<button type="submit" name="delete_service" class="btn btn-danger">Delete</button>';
+                  echo '</form>';
+                  echo '</td>';
+                  echo '</tr>';
+              }
+              
                 echo '</tbody>';
                 echo '</table>';
             } else {
@@ -192,21 +200,26 @@ $result = $conn->query($sql);
             <span class="close" onclick="closeEditModal()">&times;</span>
             <!-- Your Edit Service Form Goes Here -->
             <form method="post" action="" enctype="multipart/form-data">
-                <input type="hidden" name="service_id" id="serviceId">
-                <div class="mb-3">
-                    <label for="new_image" class="form-label">New Image:</label>
-                    <input type="file" class="form-control" name="new_image" accept="image/*">
-                </div>
-                <div class="mb-3">
-                    <label for="heading" class="form-label">Heading:</label>
-                    <input type="text" class="form-control" name="heading" id="headingField" required>
-                </div>
-                <div class="mb-3">
-                    <label for="content" class="form-label">Content:</label>
-                    <textarea class="form-control" name="content" id="contentField" rows="4" required></textarea>
-                </div>
-                <button type="submit" name="update_service" class="btn btn-primary">Update Service</button>
-            </form>
+    <input type="hidden" name="service_id" id="serviceId">
+    <div class="mb-3">
+        <label for="new_image" class="form-label">New Image:</label>
+        <input type="file" class="form-control" name="new_image" accept="image/*">
+    </div>
+    <div class="mb-3">
+        <label for="heading" class="form-label">Heading:</label>
+        <input type="text" class="form-control" name="heading" id="headingField" required>
+    </div>
+    <div class="mb-3">
+        <label for="content" class="form-label">Content:</label>
+        <textarea class="form-control" name="content" id="contentField" rows="4" required></textarea>
+    </div>
+    <div class="mb-3">
+        <label for="price" class="form-label">Price:</label>
+        <input class="form-control" name="price" id="priceField" required>
+    </div>
+    <button type="submit" name="update_service" class="btn btn-primary">Update Service</button>
+</form>
+
         </div>
     </div>
 
@@ -216,22 +229,47 @@ $result = $conn->query($sql);
 
 <script>
     // JavaScript functions for custom modal
+    var selectedService = null;
+
     function openEditModal(serviceId) {
+        selectedService = serviceId;
         var modal = document.getElementById("customEditModal");
         modal.style.display = "block";
-        
-        // Use AJAX to fetch service data based on serviceId and populate the form fields
-        // Replace the following lines with your AJAX logic to populate the fields
-        document.getElementById("serviceId").value = serviceId;
-        // document.getElementById("headingField").value = "Service Heading"; // Replace with actual data
-        // document.getElementById("contentField").value = "Service Content"; // Replace with actual data
+
+        // Find the corresponding service row
+        var serviceRow = document.querySelector('tr[data-service-id="' + serviceId + '"]');
+
+        // Populate the form fields with data from the service row
+        document.getElementById("serviceId").value = serviceRow.dataset.serviceId;
+        document.getElementById("headingField").value = serviceRow.querySelector('.editable[data-field="heading"]').textContent;
+        document.getElementById("contentField").value = serviceRow.querySelector('.editable[data-field="content"]').textContent;
+        document.getElementById("priceField").value = serviceRow.querySelector('.editable[data-field="price"]').textContent;
     }
 
     function closeEditModal() {
         var modal = document.getElementById("customEditModal");
         modal.style.display = "none";
     }
+
+    function updateService() {
+        if (selectedService !== null) {
+            // Retrieve updated data from the form fields
+            var heading = document.getElementById("headingField").value;
+            var content = document.getElementById("contentField").value;
+            var price = document.getElementById("priceField").value;
+
+            // Update the service data in the corresponding row
+            var serviceRow = document.querySelector('tr[data-service-id="' + selectedService + '"]');
+            serviceRow.querySelector('.editable[data-field="heading"]').textContent = heading;
+            serviceRow.querySelector('.editable[data-field="content"]').textContent = content;
+            serviceRow.querySelector('.editable[data-field="price"]').textContent = price;
+
+            // Close the modal
+            closeEditModal();
+        }
+    }
 </script>
+
 
 <!-- Include Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js" integrity="sha384-pzjw8f+ua7Kw1TIq0v8FqFjcJ6pajs/rfdfs3SO+k/e7Jnw2+rpsQ/g5F5n5Xg5fw" crossorigin="anonymous"></script>

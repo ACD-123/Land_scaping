@@ -33,16 +33,16 @@ function getProviderWorkingImages($conn, $provider_id)
     $provider_id = mysqli_real_escape_string($conn, $provider_id);
 
     // Retrieve working images for the provider from the 'working_images' table
-    $sql = "SELECT * FROM provider_images WHERE provider_services_id = '$provider_id'";
+    $sql = "SELECT * FROM provider_images WHERE provider_id = '$provider_id'";
     $result = $conn->query($sql);
 
     $images = array();
 
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $images[] = $row['image_path'];
-        }
-    }
+    // if ($result->num_rows > 0) {
+    //     while ($row = $result->fetch_assoc()) {
+    //         $images[] = $row['image_path'];
+    //     }
+    // }
 
     return $images;
 }
@@ -112,6 +112,44 @@ if (isset($_GET['id'])) {
       $workingImages = getProviderWorkingImages($conn, $provider_id);
   }
 }
+
+function getServicePrices($conn, $servicesArray) {
+  $prices = array();
+
+  foreach ($servicesArray as $individualService) {
+      $serviceName = mysqli_real_escape_string($conn, $individualService);
+
+      $sql = "SELECT price FROM categories WHERE heading = '$serviceName'";
+echo "SQL Query: $sql"; // Debugging line
+$result = $conn->query($sql);
+
+if (!$result) {
+    die("SQL Error: " . mysqli_error($conn));
+}
+
+$row = $result->fetch_assoc();
+$price = $row['price'];
+
+if ($price === 'N/A') {
+    echo "Price not found for service: $serviceName";
+} else {
+    echo "Price for $serviceName: $price";
+}
+
+$result = $conn->query($sql);
+if (!$result) {
+    die("SQL Error: " . mysqli_error($conn));
+}
+
+
+  }
+
+  return $prices;
+}
+
+// Call this function to get service prices
+$servicePrices = getServicePrices($conn, $servicesArray);
+
 ?>
 <!DOCTYPE html>
 <html lang="zxx">
@@ -201,7 +239,7 @@ if (isset($_GET['id'])) {
                   <div class="row provider-gradedetails">
                     <div class="col-lg-3 col-sm-12 align-self-center">
                       <div class="provider-name">
-                        <img src="./images/providerselected/providerimage.png" />
+                        <img src="../provider/<?php echo $profile_picture ?>" />
                         <h4><?php echo $fullname; ?></h4>
                       </div>
                     </div>
@@ -240,9 +278,9 @@ if (isset($_GET['id'])) {
                         <h5>Work Done Gallery</h5>
                         <ul style="width: 100%;">
                           <?php
-                          $imageHtml = '';
+                          // $imageHtml = '';
 foreach ($workingImages as $imagePath) {
-    $imageHtml .= "<li><img src='$imagePath' /></li>";
+    echo  "<img src='$imagePath' />";
 }
                           ?>
                         </ul>
@@ -251,17 +289,22 @@ foreach ($workingImages as $imagePath) {
                     <div class="col-lg-6 col-sm-12">
                       <div class="speciality-info">
                         <h5>Specialities</h5>
-                        <div class="row">
+                        <!-- <ul class="specialitylist" style="width: 100%;">
+                                            <li><img src="./images/providerselected/Snow Plow.png"/> Removal</li>
+                                            <li><img src="./images/providerselected/Grass.png"/> Grass Cutting</li>
+                                            <li><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</li>
+                                        </ul> -->
+                        <!-- <div class="row"> -->
+                        <ul class='specialitylist' style='width: 100%;'>
                         <?php
 
                         foreach ($servicesArray as $individualService) {
-                          echo "<div class='col-lg-4'>";
-                          echo "<p>$individualService</p>";
-                          echo "</div>";
+                          echo " <li><img src='./images/providerselected/Snow Plow.png'/>$individualService</li>";
                         }
 
                           ?>
-                        </div>
+                          </ul>
+                        <!-- </div> -->
 
                         <ul class="specialitylist" style="width: 100%;">
                           
@@ -355,7 +398,16 @@ foreach ($workingImages as $imagePath) {
                   <div class="select-service-booking">
                     <h4>Select Services you need</h4>
                     <div class="row">
-                      <div class="col-lg-3 mb-3 mb-lg-0">
+                    <?php
+
+                  foreach ($servicesArray as $individualService) {
+                    echo "<div class='col-lg-3 mb-3 mb-lg-0'>";
+                    echo "<label><input type='checkbox' name='checkbox' value='value'>$individualService</label>";
+                    echo "</div>";
+                  }
+
+                    ?>
+                      <!-- <div class="col-lg-3 mb-3 mb-lg-0">
                         <label><input type="checkbox" name="checkbox" value="value">Gardening</label>
                       </div>
                       <div class="col-lg-3 mb-3 mb-lg-0">
@@ -366,9 +418,9 @@ foreach ($workingImages as $imagePath) {
                       </div>
                       <div class="col-lg-3 mb-3 mb-lg-0">
                         <label><input type="checkbox" name="checkbox" value="value">Grass Trimming</label>
-                      </div>
+                      </div> -->
                     </div>
-                    <div class="row">
+                    <!-- <div class="row">
                       <div class="col-lg-3 mb-3 mb-lg-0">
                         <label><input type="checkbox" name="checkbox" value="value">Tree Planting</label>
                       </div>
@@ -381,7 +433,7 @@ foreach ($workingImages as $imagePath) {
                       <div class="col-lg-3 mb-3 mb-lg-0">
                         <label><input type="checkbox" name="checkbox" value="value">Snow removal</label>
                       </div>
-                    </div>
+                    </div> -->
                   </div>
 
                   <div class="upload-field-booking">
@@ -690,21 +742,21 @@ foreach ($workingImages as $imagePath) {
               <fieldset>
                 <div class="your-offer-selected">
                   <div class="row">
-                    <div class="col-lg-6 mb-3 mb-lg-0">
-                      <h2>Your offers for services selected</h2>
-                      <div class="unorderlist-selected">
-                        <li><em><img src="./images/providerselected/Snow Plow.png" />Snow
-                            Removal</em><span>$100.00</span></li>
-                        <li><em><img src="./images/providerselected/Cover Up.png" />Spring
-                            Cleanup</em><span>$100.00</span></li>
-                        <li><em><img src="./images/providerselected/Grass.png" />Grass Cutting</em><span>$100.00</span>
-                        </li>
-                      </div>
-                      <div class="totalselected">
-                        <li><em><img src="./images/providerselected/total.png" />Total Charges</em><span>$300</span>
-                        </li>
-                      </div>
-                    </div>
+                  <div class="col-lg-6 mb-3 mb-lg-0">
+    <h2>Your offers for services selected</h2>
+    <div class="unorderlist-selected">
+        <?php
+        foreach ($servicesArray as $individualService) {
+          $price = isset($servicePrices[$individualService]) ? $servicePrices[$individualService] : $price = 'N/A';
+          echo "<li><em><img src='./images/providerselected/Snow Plow.png' />$individualService</em><span>$" . $price . "</span></li>";
+        }
+        ?>
+    </div>
+    <div class="totalselected">
+        <li><em><img src="./images/providerselected/total.png" />Total Charges</em><span>$300</span></li>
+    </div>
+</div>
+
                     <div class="col-lg-6 mb-3 mb-lg-0">
                       <div class="selected-prfle-detl">
                         <div class="order-details-checkout">

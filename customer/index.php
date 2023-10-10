@@ -88,7 +88,37 @@ include 'Header.php'
       </div>
     </div>
     <div class="row">
-      <div class="col-lg-3 mb-3 mb-lg-0">
+    <?php
+         // Include your database connection script
+        include 'connection.php';
+
+        // Retrieve services from the database
+        $sql = "SELECT * FROM categories LIMIT 6";
+        $result = $conn->query($sql);
+         if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $image = $row['image'];
+                $heading = $row['heading'];
+                $content = $row['content'];
+                $price = $row['price'];
+                ?>
+                <div class="col-lg-3 mb-3 mb-lg-0">
+                  <a href="services.php">
+                    <div class="services-inner-box" style="text-align: center;">
+                        <img style="object-fit: cover; width: 40%;" src="http://localhost/aron_burks/admin/uploads/<?php echo $image; ?>">
+                        <h3><?php echo $heading; ?></h3>
+                        <h4>Avg. Project: $<?php echo $price; ?></h4>
+                        <!-- <a href='#'><button>Explore More</button></a> -->
+                    </div>
+                    </a>
+                </div>
+                <?php
+            }
+        } else {
+            echo "No services found.";
+        }
+        ?>
+      <!-- <div class="col-lg-3 mb-3 mb-lg-0">
        <div class="services-inner-box" style="text-align: center;">
         <img src="./images/services/serv1.png" width="100%"/>
         <h3>Lawn mowing</h3>
@@ -115,11 +145,11 @@ include 'Header.php'
           <h3>Grass Cutting</h3>
           <h4>Avg. Project: $54 – $124</h4>
          </div>
-      </div>
+      </div> -->
     </div>
 
     <!-- SECOND ROW START -->
-    <div class="row" style="padding-top: 20px;">
+    <!-- <div class="row" style="padding-top: 20px;">
       <div class="col-lg-3 mb-3 mb-lg-0">
        <div class="services-inner-box" style="text-align: center;">
         <img src="./images/services/serv1.png" width="100%"/>
@@ -148,7 +178,7 @@ include 'Header.php'
           <h4>Avg. Project: $54 – $124</h4>
          </div>
       </div>
-    </div>
+    </div> -->
     <!-- SECOND ROW END -->
   </div>
 </section>
@@ -164,51 +194,51 @@ include 'Header.php'
       demonstrate the visual form of a document or a typeface without relying on meaningful content.</p>
   </div>
   <?php
-// Include your database connection script
-include 'connection.php';
+              // Include your database connection script
+              include 'connection.php';
 
-// Retrieve services from the database
-$sql = "SELECT * FROM provider_registration where role_id = 2 Limit 3";
-$result = $conn->query($sql);
-if ($result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $fullname = $row['fullname'];
-        $country = $row['country'];
-        $city = $row['city'];
-        $profile_picture = $row['profile_picture'];
-        $provider_id = $row['id']; // Added to get the provider ID
+              // Retrieve services from the database
+              $sql = "SELECT * FROM provider_registration where role_id = 2 Limit 3";
+              $result = $conn->query($sql);
+              if ($result->num_rows > 0) {
+                  while ($row = $result->fetch_assoc()) {
+                      $fullname = $row['fullname'];
+                      $country = $row['country'];
+                      $city = $row['city'];
+                      $profile_picture = $row['profile_picture'];
+                      $provider_id = $row['id']; // Added to get the provider ID
 
-        // Wrap the provider card with a link to provider.php
-        echo '<div class="col-lg-4 mb-4 mb-lg-0">';
-        echo '<a href="../provider/registeration.php">';
-        echo '<div class="provider-card">';
-        echo '<div style="width:100%; height:200px;">';
-        echo '<img style="object-fit:contain; width:100%; height:100%" src="../provider/' . $profile_picture . '" width="100%"/>';
-        echo '</div>';
-        echo '<div class="feature-info-box">';
-        echo '<div style="display:flex; justify-content:space-between; align-items:center">';
-        echo '<h4>' . $fullname . '</h4>';
-        echo '<h6 style="color:#7A7A7A"><i class="fa fa-comment" aria-hidden="true" style="color:#70be44"></i> Contact for pricing</h6>';
-        echo '</div>';
-        echo '<p>Lorem Ipsum is simply dummy text of the printing and typesetting ';
-        echo 'industry. Lorem Ipsum has been the industry\'s standard dummy text ';
-        echo 'ever since the 1500s</p>';
-        echo '<ul class="featurelist-2">';
-        echo '<li><i class="fa fa-user" aria-hidden="true"></i> Worker</li>';
-        echo '<li class="prc2"><b>4.0</b> <span>(10) </span><img src="./images/featured-provider/star.png"/></li>';
-        echo '</ul>';
-        echo '<ul class="featurelist-3">';
-        echo '<li><i class="fa fa-trophy" aria-hidden="true"></i>Hired 11 Times</li>';
-        echo '<li class="prc3"><i class="fa fa-location-arrow" aria-hidden="true"></i> ' . $city . '</li>';
-        echo '</ul>';
-        echo '</div>';
-        echo '</div>';
-        echo '</a>';
-        echo '</div>';
-    }
-} else {
-    echo "No services found.";
-}
+                      // Wrap the provider card with a link to provider.php
+                      echo '<div class="col-lg-4 mb-4 mb-lg-0">';
+                      echo '<a href="provider.php?id=' . $provider_id . '">';
+                      echo '<div class="provider-card">';
+                      echo '<div style="width:100%; height:200px;">';
+                      echo '<img style="object-fit:contain; width:100%; height:100%" src="../provider/' . $profile_picture . '" width="100%"/>';
+                      echo '</div>';
+                      echo '<div class="feature-info-box">';
+                      echo '<div style="display:flex; justify-content:space-between; align-items:center">';
+                      echo '<h4>' . $fullname . '</h4>';
+                      echo '<h6 style="color:#7A7A7A"><i class="fa fa-comment" aria-hidden="true" style="color:#70be44"></i> Contact for pricing</h6>';
+                      echo '</div>';
+                      echo '<p>Lorem Ipsum is simply dummy text of the printing and typesetting ';
+                      echo 'industry. Lorem Ipsum has been the industry\'s standard dummy text ';
+                      echo 'ever since the 1500s</p>';
+                      echo '<ul class="featurelist-2">';
+                      echo '<li><i class="fa fa-user" aria-hidden="true"></i> Worker</li>';
+                      echo '<li class="prc2"><b>4.0</b> <span>(10) </span><img src="./images/featured-provider/star.png"/></li>';
+                      echo '</ul>';
+                      echo '<ul class="featurelist-3">';
+                      echo '<li><i class="fa fa-trophy" aria-hidden="true"></i>Hired 11 Times</li>';
+                      echo '<li class="prc3"><i class="fa fa-location-arrow" aria-hidden="true"></i> ' . $city . '</li>';
+                      echo '</ul>';
+                      echo '</div>';
+                      echo '</div>';
+                      echo '</a>';
+                      echo '</div>';
+                  }
+              } else {
+                  echo "No services found.";
+              }
 ?>
 
 </div>

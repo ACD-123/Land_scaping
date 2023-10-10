@@ -18,14 +18,13 @@
               <span class="menu-title">Add Packages</span>
             </a>
           </li>
-          <!-- <li class="nav-item">
-            <a class="nav-link" href="complete-orders.html">
+          <li class="nav-item">
+            <a class="nav-link" href="Providers.php">
               <i class="menu-icon mdi mdi-file-document-box"></i>
-              <span class="menu-title">Completed Orders</span>
-
+              <span class="menu-title">All Providers</span>
             </a>
           </li>
-          <li class="nav-item">
+          <!-- <li class="nav-item">
             <a class="nav-link" href="new-offers.html">
               <i class="menu-icon mdi mdi-label-outline"></i>
               <span class="menu-title">New Offers</span>
