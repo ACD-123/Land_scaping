@@ -113,42 +113,45 @@ if (isset($_GET['id'])) {
   }
 }
 
-function getServicePrices($conn, $servicesArray) {
-  $prices = array();
+function getServicePricesAndImages($conn, $servicesArray) {
+  $data = array();
 
   foreach ($servicesArray as $individualService) {
       $serviceName = mysqli_real_escape_string($conn, $individualService);
 
-      $sql = "SELECT price FROM categories WHERE heading = '$serviceName'";
-echo "SQL Query: $sql"; // Debugging line
-$result = $conn->query($sql);
+      $sql = "SELECT price, image FROM categories WHERE heading = '$serviceName'";
+      $result = $conn->query($sql);
 
-if (!$result) {
-    die("SQL Error: " . mysqli_error($conn));
-}
+      if (!$result) {
+          die("SQL Error: " . mysqli_error($conn));
+      }
 
-$row = $result->fetch_assoc();
-$price = $row['price'];
+      $row = $result->fetch_assoc();
+      $price = $row['price'];
+      $imagePath = $row['image'];
 
-if ($price === 'N/A') {
-    echo "Price not found for service: $serviceName";
-} else {
-    echo "Price for $serviceName: $price";
-}
+      // If the price is 'N/A', set a default value
+      if ($price === 'N/A') {
+          $price = 'Price not available';
+      }
 
-$result = $conn->query($sql);
-if (!$result) {
-    die("SQL Error: " . mysqli_error($conn));
-}
-
-
+      // Store the price and image path in the data array
+      $data[$individualService] = [
+          'price' => $price,
+          'image' => $imagePath,
+      ];
   }
 
-  return $prices;
+  return $data;
 }
 
+// Call this function to get service prices and images
+$serviceData = getServicePricesAndImages($conn, $servicesArray);
+
+
+
 // Call this function to get service prices
-$servicePrices = getServicePrices($conn, $servicesArray);
+// $servicePrices = getServicePrices($conn, $servicesArray);
 
 ?>
 <!DOCTYPE html>
@@ -296,14 +299,17 @@ foreach ($workingImages as $imagePath) {
                                         </ul> -->
                         <!-- <div class="row"> -->
                         <ul class='specialitylist' style='width: 100%;'>
-                        <?php
+    <?php
+    foreach ($servicesArray as $individualService) {
+        $serviceInfo = $serviceData[$individualService];
+        $price = $serviceInfo['price'];
+        $imagePath = $serviceInfo['image'];
 
-                        foreach ($servicesArray as $individualService) {
-                          echo " <li><img src='./images/providerselected/Snow Plow.png'/>$individualService</li>";
-                        }
+        echo "<li><img src='../admin/uploads/$imagePath' /> $individualService</li>";
+    }
+    ?>
+</ul>
 
-                          ?>
-                          </ul>
                         <!-- </div> -->
 
                         <ul class="specialitylist" style="width: 100%;">
@@ -392,21 +398,20 @@ foreach ($workingImages as $imagePath) {
               <!-- PROVIDER END -->
 
               <!-- second FIELDSET START -->
+
               <fieldset>
                 <div class="row booking-section" style="width: 100%;">
                   <h3 style="width: 100%;">Select Services & Set Your Booking</h3>
                   <div class="select-service-booking">
                     <h4>Select Services you need</h4>
                     <div class="row">
-                    <?php
-
-                  foreach ($servicesArray as $individualService) {
-                    echo "<div class='col-lg-3 mb-3 mb-lg-0'>";
-                    echo "<label><input type='checkbox' name='checkbox' value='value'>$individualService</label>";
-                    echo "</div>";
-                  }
-
-                    ?>
+                                      <?php
+                          foreach ($servicesArray as $individualService) {
+                              echo "<div class='col-lg-3 mb-3 mb-lg-0'>";
+                              echo "<label><input type='checkbox' name='selected_services[]' value='$individualService'>$individualService</label>";
+                              echo "</div>";
+                          }
+                          ?>
                       <!-- <div class="col-lg-3 mb-3 mb-lg-0">
                         <label><input type="checkbox" name="checkbox" value="value">Gardening</label>
                       </div>
@@ -460,6 +465,27 @@ foreach ($workingImages as $imagePath) {
                       </div>
                     </div>
                   </div>
+                  <?php
+                  include 'connection.php';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Get the selected date from the POST request
+    $year = $_POST['year'];
+    $month = $_POST['month'];
+    $day = $_POST['day'];
+
+    // Insert the date into your MySQL database
+    // Modify the following code based on your database connection and SQL query
+
+    $insertQuery = "INSERT INTO your_table (year, month, day) VALUES ('$year', '$month', '$day')";
+    $result = mysqli_query($conn, $insertQuery);
+
+    if ($result) {
+        echo 'Date inserted successfully!';
+    } else {
+        echo 'Error: ' . mysqli_error($conn);
+    }
+}
+?>
 
                   <div id='main'>
                     <h3>Choose Your Time & Date </h3>
@@ -469,22 +495,41 @@ foreach ($workingImages as $imagePath) {
                     <h4>Already Booked hours</h4>
                     <div class="row">
                       <div class="col-lg-4 mb-4 mb-lg-0">
-                        <a href="#">
-                          <button class="green">6PM -9 PM</button>
-                        </a>
+                          <button type="button" class="green">6PM -9 PM</button>
                       </div>
                       <div class="col-lg-4 mb-4 mb-lg-0">
-                        <a href="#">
-                          <button class="orange">10 AM -12 PM</button>
-                        </a>
+                          <button type="button" class="orange">10 AM -12 PM</button>
                       </div>
                       <div class="col-lg-4 mb-4 mb-lg-0">
-                        <a href="#">
-                          <button class="blue">2PM-4PM</button>
-                        </a>
+                          <button type="button" class="blue">2PM-4PM</button>
+
                       </div>
                     </div>
                   </div>
+                  <script>
+  const selectedDate = document.querySelector('.calendar-day.active');
+
+  selectedDate.addEventListener('click', function() {
+    const year = selectedDate.getAttribute('date-year');
+    const month = selectedDate.getAttribute('date-month');
+    const day = selectedDate.getAttribute('date-day');
+
+    // Send the selected date to the PHP script using an AJAX request
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'your_php_script.php', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        // Handle the response from your PHP script
+        console.log(xhr.responseText);
+      }
+    };
+
+    xhr.send(`year=${year}&month=${month}&day=${day}`);
+  });
+</script>
+
                   <div class="text-header">
                     <h4>Set Time</h4>
 
@@ -496,7 +541,7 @@ foreach ($workingImages as $imagePath) {
                           <p>01</p>
                         </li>
                         <li>
-                          <p>02</p>
+                          <p oncha>02</p>
                         </li>
                         <li>
                           <p>03</p>
@@ -742,27 +787,31 @@ foreach ($workingImages as $imagePath) {
               <fieldset>
                 <div class="your-offer-selected">
                   <div class="row">
-                  <div class="col-lg-6 mb-3 mb-lg-0">
-    <h2>Your offers for services selected</h2>
-    <div class="unorderlist-selected">
-        <?php
-        foreach ($servicesArray as $individualService) {
-          $price = isset($servicePrices[$individualService]) ? $servicePrices[$individualService] : $price = 'N/A';
-          echo "<li><em><img src='./images/providerselected/Snow Plow.png' />$individualService</em><span>$" . $price . "</span></li>";
-        }
-        ?>
-    </div>
-    <div class="totalselected">
-        <li><em><img src="./images/providerselected/total.png" />Total Charges</em><span>$300</span></li>
-    </div>
-</div>
+                    <div class="col-lg-6 mb-3 mb-lg-0">
+                        <h2>Your offers for services selected</h2>
+                        <div class="unorderlist-selected" id="selected-services-list">
+                              <?php
+                              foreach ($servicesArray as $individualService) {
+                                  $serviceInfo = $serviceData[$individualService];
+                                  $price = $serviceInfo['price'];
+                                  $imagePath = $serviceInfo['image'];
+                                  echo "<li><em><img src='../admin/uploads/$imagePath' />$individualService</em><span>$" . $price . "</span></li>";
+                              }
+                              ?>
+                        </div>
+                        <div class="totalselected">
+                            <li><em><img src="./images/providerselected/total.png" />Total Charges</em>
+                              <span id="total-amount">$0</span> <!-- Add an empty span for total amount -->
+                            </li>
+                        </div>
+                    </div>
 
                     <div class="col-lg-6 mb-3 mb-lg-0">
                       <div class="selected-prfle-detl">
                         <div class="order-details-checkout">
                           <div class="text-order-image">
-                            <img src="./images/hiring/hiring1.png" />
-                            <h2>David Johnson <br> <span>Lawn Mower</span></h2>
+                            <img src="../provider/<?php echo $profile_picture ?>" />
+                            <h2><?php echo $fullname; ?><br> <span>Lawn Mower</span></h2>
 
                           </div>
                           <ul class="order-details-minor" style="width: 100%;">
@@ -772,11 +821,21 @@ foreach ($workingImages as $imagePath) {
                           </ul>
                           <div class="pricedetails1">
                             <h4>Services Selected</h4>
-                            <ul>
+                            <ul id="selected-services-list2">
+                              <?php
+                              foreach ($servicesArray as $individualService) {
+                                  $serviceInfo = $serviceData[$individualService];
+                                  $price = $serviceInfo['price'];
+                                  $imagePath = $serviceInfo['image'];
+                                  echo "<li><em>$individualService</em><span style='color: #70BE44;'>$" . $price . "</span></li>";
+                              }
+                              ?>
+                        </ul>
+                            <!-- <ul >
                               <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
                               <li><em>Snow Removal</em> <span style="color: #70BE44;">$ 100.00</span></li>
                               <li><em>Grass Cutting</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                            </ul>
+                            </ul> -->
                           </div>
                           <div class="taskdes-checkout">
                             <h4>Task Description</h4>
@@ -803,54 +862,7 @@ foreach ($workingImages as $imagePath) {
                       <p>Your Offer Has been successfully sent to service provider</p>
                     </div>
                   </div>
-                  <div class="row">
-                    <div class="col-lg-6 mb-3 mb-lg-0">
-                      <h2>Your offers for services selected</h2>
-                      <div class="unorderlist-selected">
-                        <li><em><img src="./images/providerselected/Snow Plow.png" />Snow
-                            Removal</em><span>$100.00</span></li>
-                        <li><em><img src="./images/providerselected/Cover Up.png" />Spring
-                            Cleanup</em><span>$100.00</span></li>
-                        <li><em><img src="./images/providerselected/Grass.png" />Grass Cutting</em><span>$100.00</span>
-                        </li>
-                      </div>
-                      <div class="totalselected">
-                        <li><em><img src="./images/providerselected/total.png" />Total Charges</em><span>$300</span>
-                        </li>
-                      </div>
-                    </div>
-                    <div class="col-lg-6 mb-3 mb-lg-0">
-                      <div class="selected-prfle-detl">
-                        <div class="order-details-checkout">
-                          <div class="text-order-image">
-                            <img src="./images/hiring/hiring1.png" />
-                            <h2>David Johnson <br> <span>Lawn Mower</span></h2>
-
-                          </div>
-                          <ul class="order-details-minor" style="width: 100%;">
-                            <h4>Booking Timing</h4>
-                            <li><i style="color: #70BE44;" class="fa fa-clock" aria-hidden="true"></i>
-                              21, August,4:00 AM, SUN </li>
-                          </ul>
-                          <div class="pricedetails1">
-                            <h4>Services Selected</h4>
-                            <ul>
-                              <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                              <li><em>Snow Removal</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                              <li><em>Grass Cutting</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                            </ul>
-                          </div>
-                          <div class="taskdes-checkout">
-                            <h4>Task Description</h4>
-                            <p>I'm Stuck at Norway highway near Crown valley street, I have to
-                              wash & tint my car as soon as possible because of this extreme
-                              sunny weather. kindly come fast ASAP I'm waiting for you service.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                 
                 </div>
 
               </fieldset>
@@ -926,6 +938,63 @@ foreach ($workingImages as $imagePath) {
   </footer>
 
   <!-- footer end -->
+
+  
+  <script>
+    // Get all the checkboxes
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    // Get the selected services list element
+    const selectedServicesList = document.getElementById('selected-services-list');
+    const selectedServicesList2 = document.getElementById('selected-services-list2'); // New div's id
+    // Get the total amount elements
+    const totalAmountElement = document.getElementById('total-amount');
+    const totalAmountElement2 = document.getElementById('total-amount2'); // New span's id
+
+    // Function to update the selected services list and calculate the total amount
+    function updateSelectedServices() {
+        // Clear the selected services lists
+        selectedServicesList.innerHTML = '';
+        selectedServicesList2.innerHTML = '';
+
+        // Initialize the total amounts to 0
+        let totalAmount = 0;
+        let totalAmount2 = 0;
+
+        // Loop through checkboxes and display selected services
+        checkboxes.forEach((checkbox) => {
+            if (checkbox.checked) {
+                const individualService = checkbox.value;
+                const serviceInfo = <?php echo json_encode($serviceData); ?>; // Provided by PHP
+                const price = serviceInfo[individualService].price;
+                const imagePath = serviceInfo[individualService].image;
+
+                // Add selected service to both lists
+                selectedServicesList.innerHTML += `
+                    <li><em><img src='../admin/uploads/${imagePath}' />${individualService}</em><span>$${price}</span></li>
+                `;
+                selectedServicesList2.innerHTML += `
+                    <li><em>${individualService}</em><span style='color: #70BE44;'>$${price}</span></li>
+                `;
+
+                // Update the total amounts
+                totalAmount += parseFloat(price);
+                totalAmount2 += parseFloat(price);
+            }
+        });
+
+        // Display the total amounts
+        totalAmountElement.textContent = `$${totalAmount.toFixed(2)}`;
+        totalAmountElement2.textContent = `$${totalAmount2.toFixed(2)}`;
+    }
+
+    // Add change event listeners to all checkboxes
+    checkboxes.forEach((checkbox) => {
+        checkbox.addEventListener('change', updateSelectedServices);
+    });
+
+    // Initial update when the page loads
+    updateSelectedServices();
+</script>
 
   <!-- jQuery -->
   <script src="plugins/jQuery/jquery.min.js"></script>
