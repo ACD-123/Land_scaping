@@ -32,12 +32,25 @@ if (isset($_POST['register'])) {
         if ($password !== $confirm_password) {
             $error_message = "Passwords do not match. Please try again.";
         } else {
+           // Handle profile picture upload
+           if ($_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
+            $profilePictureName = $_FILES['profile_picture']['name'];
+            $profilePictureTmpName = $_FILES['profile_picture']['tmp_name'];
+            $profilePictureDestination = 'profile_pictures/' . $profilePictureName; // Choose a destination directory
+
+            // Move the uploaded profile picture to the destination
+            if (move_uploaded_file($profilePictureTmpName, $profilePictureDestination)) {
+                // File was uploaded successfully, you can store $profilePictureDestination in the database.
+            } else {
+              $error_message = "Error uploading profile picture: " . $_FILES['profile_picture']['error'];
+            }
+        }
             // Hash the password before storing it in the database
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
             // Insert user data into the database
-            $sql = "INSERT INTO provider_registration (fullname, email, phone, address, country, region, city, zipcode, password, role_id)
-            VALUES ('$fullname', '$email', '$phone', '$address', '$country', '$region', '$city', '$zipcode', '$hashed_password', $defaultRoleId)";
+            $sql = "INSERT INTO provider_registration (fullname, email, phone, address, country, region, city, zipcode, password, role_id, profile_picture)
+            VALUES ('$fullname', '$email', '$phone', '$address', '$country', '$region', '$city', '$zipcode', '$hashed_password', $defaultRoleId, '$profilePictureDestination')";
 
 if ($conn->query($sql) === TRUE) {
   // Generate a random verification code (e.g., a 6-digit number)
@@ -137,7 +150,18 @@ $conn->close();
                         </a>
                 <h2>Create an Account</h2>
                 <img style="margin-bottom: 5px;" width="auto" src="./images/Line 43.png" />
-                <form id="contact" action="Signup.php" method="post">
+                <form id="contact" action="Signup.php" method="post" enctype="multipart/form-data">
+                <div class="img-wrapper">
+                                    <p style="text-align: left;margin-left: 10px;">Your Profile Picture</p>
+
+                                      <label for="profile_picture" class="img-upload-btn">
+                                        <div class="preview">
+                                          <p class="no-pic"><img src="../assets/images/becomesprovider/regupload.png" alt=""></p>
+                                          <img src="" class="profile-img" style="opacity: 0;">
+                                        </div> 
+                                      </label>
+                                      <input type="file" id="profile_picture" name="profile_picture" accept=".jpg, .jpeg, .png" style="opacity: 0;">
+                                    </div>
                   <fieldset>
                     <input placeholder="Full Name" name="fullname" type="text" tabindex="1" required autofocus>
                   </fieldset>
@@ -215,7 +239,20 @@ $conn->close();
   </section>
 
 
+  <script>
+                                    const input = document.querySelector("input");
+const preview = document.querySelector(".preview");
+const para = document.querySelector(".no-pic");
+const image = document.querySelector(".profile-img");
+input.addEventListener("change", updateImageDisplay);
+function updateImageDisplay() {
+  para.style.display = "none";
+  const curFiles = input.files;
+  image.src = URL.createObjectURL(curFiles[0]);
+  image.style.opacity = 1;
+}
 
+                                </script>
   <!-- footer end -->
   <script>
     // Check if the error message variable is not empty

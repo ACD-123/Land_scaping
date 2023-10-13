@@ -1778,7 +1778,7 @@ section#provider-booking-payment .gallerinfo ul li img:hover {
   transition: .9s;
 }
 section#provider-booking-payment .gallerinfo ul li img {
-  width: 70px;
+  width: 100px;
   transition: .9s;
 }
 section#provider-booking-payment .gallerinfo ul li {
@@ -1787,6 +1787,9 @@ section#provider-booking-payment .gallerinfo ul li {
 section#provider-booking-payment .gallerinfo ul {
   margin: 0;
   padding: 0;
+  display: inline-flex;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 section#provider-booking-payment .gallerinfo {
   text-align: left;
@@ -2279,7 +2282,17 @@ section#provider-booking-payment .time-selection ul#custom-timeslot, section#pro
   width: 160px;
   transition: .9s;
 }
+#image_preview{
+  gap: 10px;
+  display: flex;
+}
+#image_preview img{
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+}
 section#provider-booking-payment .time-selection {
+  justify-content: center;
   display: flex;
   text-align: center;
   margin: 0 auto;
@@ -2292,6 +2305,22 @@ section#provider-booking-payment .time-selection ul#custom-timeslot li.selected 
   line-height: 50px;
   color: #70be44;
   font-weight: bold;
+}
+.preview {
+  justify-content: center;
+  height: 210px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.no-pic img {
+  object-fit: cover;
+  width: 100%;
+}
+.profile-img {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
 }
 .ratio-time {
   font-size: 50px;
@@ -3967,4 +3996,101 @@ button.messagebutton {
 }
 .services-selected {
   padding-top: 30px;
+}
+.profile-setting-picture .small-12.medium-2.large-2.columns {
+  margin: 0 auto;
+  display: table;
+}
+.profile-setting-picture .circle {
+  overflow: hidden;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+}
+.profile-setting-picture .profile-pic {
+  width: 128px;
+  display: inline-block;
+  height: 128px;
+  object-fit: cover;
+}
+
+.profile-setting-picture img {
+  max-width: 100%;
+  height: auto;
+}
+.profile-setting-picture .p-image {
+  color: #666666;
+  transition: all .3s cubic-bezier(.175, .885, .32, 1.275);
+}
+.profile-setting-picture i.menu-icon.mdi.mdi-pencil {
+  background: #6fbc44;
+  padding: 2px 20px 0px 20px;
+  font-size: 26px;
+  color: #fff;
+  border-radius: 20px;
+  position: relative;
+  top: -15px;
+}
+.profile-setting-picture input.file-upload {
+  position: relative;
+  opacity: 0;
+  position: absolute;
+  top: 39%;
+  height: 160px;
+  left: 44%;
+  width: 160px;
+}
+.profile-picture{
+  
+  object-fit: fill;
+  border-radius: 65px;
+  width: 50px;
+  height: 50px;
+}
+.inter{
+  
+  background: white !important;
+  border: none !important;
+  border-radius: 30px !important;
+  padding: 10px !important;
+}
+.profile-setting-form input, .profile-setting-form select {
+  width: 100%;
+  padding: 21px 20px;
+  margin-bottom: 10px;
+  background: #E6E6E691;
+  border: 0;
+  border-radius: 10px;
+  font-size: 16px;
+}
+.setting-shoping-days h2, .profile-setting-picture h2 {
+  margin-bottom: 20px;
+  margin-top: 20px;
+  font-family: Cairo;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 30px;
+  letter-spacing: 0em;
+  text-align: left;
+  color: #4F4F4F;
+}
+.profile-setting-form select {
+  padding: 0px 20px;
+  color: #757575;
+  height: calc(3.25rem + 2px) !important;
+}
+
+.ndnd .fixed-top{
+  position: relative !important;
+  background-color: #000;
+}
+.profile-setting-form button {
+    float: right;
+    width: 30%;
+    background: #70BE44;
+    color: #fff;
+    border: 0;
+    padding: 16px 0;
+    font-size: 16px;
+    border-radius: 10px;
 }

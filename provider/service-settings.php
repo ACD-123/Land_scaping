@@ -17,6 +17,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
         $shop_working_day_to = $_POST['shop_working_day_to'];
         $working_timings_from = $_POST['working_timings_from'];
         $working_timings_to = $_POST['working_timings_to'];
+        $additionalContent = $_POST['additional_content'];
 
         // Handle multiple image file uploads
         $image_paths = array();
@@ -51,23 +52,24 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
 
             $updateQuery .= "shop_working_day = '$shop_working_day', shop_working_day_to = '$shop_working_day_to', 
                             working_timings_from = '$working_timings_from', working_timings_to = '$working_timings_to', 
-                            selectedPackage = '$selectedPackage' WHERE provider_id = '$provider_id'";
+                            selectedPackage = '$selectedPackage', additional_content = '$additionalContent' WHERE provider_id = '$provider_id'";
 
             if ($conn->query($updateQuery) === TRUE) {
                 // Update was successful, you can also update the images if needed
                 // ...
 
-                // Check if there are new images to insert
-                if (!empty($image_paths[0])) {
-                    // Retrieve provider_services_id from the existing record
-                    $provider_services_id = $result->fetch_assoc()['id'];
-                    
-                    // Insert the image paths into the new table with provider_services_id
-                    foreach ($image_paths as $image_path) {
-                        $insertImageQuery = "INSERT INTO provider_images (provider_services_id, image_path)
-                                            VALUES ('$provider_services_id', '$image_path')";
-                        $conn->query($insertImageQuery);
-                    }
+                // Retrieve provider_services_id from the existing record
+                $provider_services_id = $result->fetch_assoc()['id'];
+                
+                // Delete existing images for the provider
+                $deleteImagesQuery = "DELETE FROM provider_images WHERE provider_services_id = '$provider_services_id'";
+                $conn->query($deleteImagesQuery);
+
+                // Insert the image paths into the new table with provider_services_id
+                foreach ($image_paths as $image_path) {
+                    $insertImageQuery = "INSERT INTO provider_images (provider_services_id, image_path)
+                                        VALUES ('$provider_services_id', '$image_path')";
+                    $conn->query($insertImageQuery);
                 }
 
                 header("Location: service-settings.php");
@@ -79,8 +81,8 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
         } else {
             // If no record exists, insert a new record
             if (!empty($services) || !empty($commercialServices)) {
-                $insertQuery = "INSERT INTO provider_services (provider_id, services, commercial_services, shop_working_day, shop_working_day_to, working_timings_from, working_timings_to, selectedPackage)
-                            VALUES ('$provider_id', '$services', '$commercialServices', '$shop_working_day', '$shop_working_day_to', '$working_timings_from', '$working_timings_to', '$selectedPackage')";
+                $insertQuery = "INSERT INTO provider_services (provider_id, services, commercial_services, shop_working_day, shop_working_day_to, working_timings_from, working_timings_to, selectedPackage, additional_content)
+                            VALUES ('$provider_id', '$services', '$commercialServices', '$shop_working_day', '$shop_working_day_to', '$working_timings_from', '$working_timings_to', '$selectedPackage', '$additionalContent')";
 
                 if ($conn->query($insertQuery) === TRUE) {
                     // Insertion was successful
@@ -112,6 +114,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
     exit;
 }
 ?>
+
 <!-- Your HTML form here -->
 
 
@@ -487,18 +490,21 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
                       <div class="col-md-2">
                       </div>
                   </div>
-
-                  <div class="gallery-section-service" style="padding: 40px 0px 30px 0px;">
-              <h2>Your Past work Images</h2>
-              <div class="container">
-                  <div class="row">
-                      <div class="my-2" style="background-image: url(./images/upload.PNG);">
-                          <input type="file" class="form-control" id="images" name="images[]" onchange="preview_images();" multiple accept="image/*" />
-                      </div>
+                  <div class="setting-shoping-days">
+                    <h2 for="additional_content">About Your Self</h2>
+                    <textarea name="additional_content" id="additional_content" class="txt-add" rows="4" cols="50"></textarea>
                   </div>
-                  <div class="row" id="image_preview"></div>
-              </div>
-          </div>
+                <div class="gallery-section-service" style="padding: 40px 0px 30px 0px;">
+                  <h2>Your Past work Images</h2>
+                  <div class="container">
+                      <div class="row">
+                          <div class="my-2" style="background-image: url(./images/upload.PNG);">
+                              <input type="file" class="form-control" id="images" name="images[]" onchange="preview_images();" multiple accept="image/*" />
+                          </div>
+                      </div>
+                      <div class="row" id="image_preview"></div>
+                  </div>
+                </div>
 
 
 

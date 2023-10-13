@@ -27,22 +27,30 @@ include 'connection.php'
                     <a class="nav-link" href="myhirings.php">My Hirings</a>
                 </li>
                 <?php
-                    if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'customer') {
-                        $userId = $_SESSION['user_id'];
-                        $userDataQuery = "SELECT fullname FROM provider_registration WHERE id = $userId";
-                        $result = $conn->query($userDataQuery);
-                        if ($result->num_rows > 0) {
-                            $row = $result->fetch_assoc();
-                            $customerName = $row['fullname'];
-                            // $user_id = $_SESSION['id'];
+                   if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'customer') {
+                    $userId = $_SESSION['user_id'];
+                    $userDataQuery = "SELECT fullname, city, phone, email, profile_picture, zipcode, address, country, region FROM provider_registration WHERE id = $userId";
+                    $result = $conn->query($userDataQuery);
+                    if ($result->num_rows > 0) {
+                        $row = $result->fetch_assoc();
+                        $fullname = $row['fullname'];
+                        $email = $row['email'];
+                        $city = $row['city'];
+                        $zipcode = $row['zipcode'];
+                        $region = $row['region'];
+                        $phone = $row['phone'];
+                        $address = $row['address'];
+                        $country = $row['country'];
+                        $profileImage = $row['profile_picture'];
                             ?>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button"
                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <img src="./images/user.png" alt="User Profile Picture" class="profile-picture">
+                                    <img src="http://localhost/aron_burks/customer/<?php echo $profileImage; ?>" alt="User Profile Picture" class="profile-picture">
                                 </a>
                                 <div class="dropdown-menu" aria-labelledby="profileDropdown">
-                                    <a class="dropdown-item" href="dashboard.php">Profile</a>
+                                <a class="dropdown-item" href="profilesetting.php">Profile</a>
+                                    <a class="dropdown-item" href="dashboard.php">Dashboard</a>
                                     <a class="dropdown-item" href="#" data-toggle="modal"
                                        data-target="#logoutModal">Logout</a>
                                 </div>

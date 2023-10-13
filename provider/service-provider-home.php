@@ -18,6 +18,10 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
         $shop_working_day_to = $_POST['shop_working_day_to'];
         $working_timings_from = $_POST['working_timings_from'];
         $working_timings_to = $_POST['working_timings_to'];
+        // After retrieving other form fields, add this to get the content from the textarea
+        $additionalContent = $_POST['additional_content'];
+
+// Now, you can insert or update this content into your database.
 
         // Handle multiple image file uploads
         $image_paths = array();
@@ -39,11 +43,12 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
         if ($result->num_rows > 0) {
             // If a record exists, update it
             $updateQuery = "UPDATE provider_services 
-                            SET services = '$services', commercial_services = '$commercialServices', 
-                            shop_working_day = '$shop_working_day', shop_working_day_to = '$shop_working_day_to', 
-                            working_timings_from = '$working_timings_from', working_timings_to = '$working_timings_to', 
-                            selectedPackage = '$selectedPackage'
-                            WHERE provider_id = '$provider_id'";
+                SET services = '$services', commercial_services = '$commercialServices', 
+                shop_working_day = '$shop_working_day', shop_working_day_to = '$shop_working_day_to', 
+                working_timings_from = '$working_timings_from', working_timings_to = '$working_timings_to', 
+                selectedPackage = '$selectedPackage',
+                additional_content = '$additionalContent'
+                WHERE provider_id = '$provider_id'";
 
             if ($conn->query($updateQuery) === TRUE) {
                 // Update was successful, you can also update the images if needed
@@ -56,8 +61,9 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
             }
         } else {
             // If no record exists, insert a new record
-            $insertQuery = "INSERT INTO provider_services (provider_id, services, commercial_services, shop_working_day, shop_working_day_to, working_timings_from, working_timings_to, selectedPackage)
-                            VALUES ('$provider_id', '$services', '$commercialServices', '$shop_working_day', '$shop_working_day_to', '$working_timings_from', '$working_timings_to', '$selectedPackage')";
+            // Insertion query:
+$insertQuery = "INSERT INTO provider_services (provider_id, services, commercial_services, shop_working_day, shop_working_day_to, working_timings_from, working_timings_to, selectedPackage, additional_content)
+VALUES ('$provider_id', '$services', '$commercialServices', '$shop_working_day', '$shop_working_day_to', '$working_timings_from', '$working_timings_to', '$selectedPackage', '$additionalContent')";
 
             if ($conn->query($insertQuery) === TRUE) {
                 // Insertion was successful
@@ -505,21 +511,25 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
 
         <div class="tab" id="tab3">
         <div class="setting-shoping-days">
+        <div class="form-group">
+        <label for="additional_content">Additional Content</label>
+        <textarea name="additional_content" id="additional_content" class="form-control" rows="4"></textarea>
+    </div>
             <div class="gallery-section-service" style="padding: 40px 0px 30px 0px;">
             <h2>Your Past work Images</h2>
-            <div class="container">
-                <div class="row">
-                          <div class="my-2" style="background-image: url(./images/upload.PNG);">
-                              <input type="file" class="form-control" id="images" name="images[]" onchange="preview_images();" multiple accept="image/*" />
-                          </div>
-                </div>
-                <div class="row" id="image_preview"></div>
+              <div class="container">
+                  <div class="row">
+                            <div class="my-2" style="background-image: url(./images/upload.PNG);">
+                                <input type="file" class="form-control" id="images" name="images[]" onchange="preview_images();" multiple accept="image/*" />
+                            </div>
+                  </div>
+                  <div class="row" id="image_preview"></div>
+              </div>
+              <div class="button-container next-previouss">
+                <a type="button" onclick="showTab(2)">Previous</a>
+                <a class="finish" onclick="showSuccessPopupAndRedirect();" href="javascript:void(0);"><button type="submit" name="submit">Save</button></a>
+                <!-- <a href="javascript:void(0);" class="finish">Finish</a> -->
             </div>
-            <div class="button-container next-previouss">
-            <a type="button" onclick="showTab(2)">Previous</a>
-            <a class="finish" onclick="showSuccessPopupAndRedirect();" href="javascript:void(0);"><button type="submit" name="submit">Save</button></a>
-            <!-- <a href="javascript:void(0);" class="finish">Finish</a> -->
-          </div>
           </div>
         </div>
 

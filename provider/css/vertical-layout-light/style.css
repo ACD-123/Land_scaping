@@ -33826,3 +33826,17 @@ button.messagebutton {
   transition: .9s;
   background: linear-gradient(180deg, #70BE44 0%, rgba(112, 190, 68, 0) 100%), linear-gradient(0deg, #FFFFFF, #FFFFFF);
 }
+
+.txt-add{
+  border: 1px solid #909090;
+  color: #909090;
+  font-family: Cairo;
+  font-size: 24px;
+  line-height: 45px;
+  letter-spacing: 0em;
+  padding: 0px 20px;
+  border-radius: 30px;
+  font-weight: 300;
+  /* width: 240px; */
+  text-align: center;
+}

@@ -1,6 +1,8 @@
 <?php
-// Include your database connection script
 include 'connection.php';
+
+// Initialize $servicesArray
+$servicesArray = array();
 
 function getProviderServices($conn, $provider_id)
 {
@@ -13,7 +15,6 @@ function getProviderServices($conn, $provider_id)
 
     $services = array();
 
-    
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
             $services[] = $row;
@@ -26,24 +27,19 @@ function getProviderServices($conn, $provider_id)
 $provider_id = ""; // You need to get the provider ID from somewhere (e.g., query parameter)
 
 
-// Function to get provider's working images by ID
-function getProviderWorkingImages($conn, $provider_id)
-{
-    // Sanitize the input to prevent SQL injection
+function getProviderWorkingImages($conn, $provider_id) {
     $provider_id = mysqli_real_escape_string($conn, $provider_id);
-
-    // Retrieve working images for the provider from the 'working_images' table
-    $sql = "SELECT * FROM provider_images WHERE provider_id = '$provider_id'";
+    $sql = "SELECT pi.image_path FROM provider_images AS pi
+            JOIN provider_services AS ps ON pi.provider_services_id = ps.id
+            WHERE ps.provider_id = '$provider_id'";
     $result = $conn->query($sql);
-
     $images = array();
 
-    // if ($result->num_rows > 0) {
-    //     while ($row = $result->fetch_assoc()) {
-    //         $images[] = $row['image_path'];
-    //     }
-    // }
-
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $images[] = $row['image_path'];
+        }
+    }
     return $images;
 }
 // Function to get provider details by ID
@@ -62,98 +58,86 @@ function getProviderDetails($conn, $provider_id)
         return null;
     }
 }
-// Initialize variables
-$fullname = "";
+
+$provider_img = "";
 $country = "";
 $city = "";
 $address = "";
 $profile_picture = "";
 $working_timings_from = "";
+$additional_content = "";
 $workingImages = array();
 
-// Check if 'id' query parameter is set (provider_registration table ID)
 if (isset($_GET['id'])) {
-  $provider_id = $_GET['id'];
-  $providerServices = getProviderServices($conn, $provider_id);
+    $provider_id = $_GET['id'];
+    $providerServices = getProviderServices($conn, $provider_id);
 
-  // Now, $providerServices contains an array of provider services for the given provider ID.
-  // You can loop through $providerServices to display the data or use it as needed.
-  foreach ($providerServices as $service) {
-      $working_timings_from = $service['working_timings_from'];
-      $working_timings_to = $service['working_timings_to'];
-      $shop_working_day_to = $service['shop_working_day_to'];
-      // Split the services data by comma and store in an array
-      $servicesArray = explode(',', $service['services']);
-      // Trim each service to remove leading/trailing spaces
-      $servicesArray = array_map('trim', $servicesArray);
-      $commercial_services = $service['commercial_services'];
-      $workingImages = getProviderWorkingImages($conn, $service['id']);
-      // $fullname = $service['fullname'];
-      // $serviceDescription = $service['service_description'];
-      
-      // Display or process the service data as needed
-      // echo "<h2>Service Name: $working_timings_to</h2>";
-      // echo "<p>Service Description: $serviceDescription</p>";
-  }
+    foreach ($providerServices as $service) {
+        $working_timings_from = $service['working_timings_from'];
+        $working_timings_to = $service['working_timings_to'];
+        $shop_working_day_to = $service['shop_working_day_to'];
+        $additional_content = $service['additional_content'];
+
+        $individualServices = explode(',', $service['services']);
+        $individualServices = array_map('trim', $individualServices);
+        $servicesArray = array_merge($servicesArray, $individualServices);
+
+        $commercial_services = $service['commercial_services'];
+        $workingImages = getProviderWorkingImages($conn, $service['id']);
+    }
 }
-// Check if 'id' query parameter is set
+
 if (isset($_GET['id'])) {
-  $provider_id = $_GET['id'];
-  $providerDetails = getProviderDetails($conn, $provider_id);
+    $provider_id = $_GET['id'];
+    $providerDetails = getProviderDetails($conn, $provider_id);
 
-  if ($providerDetails) {
-      $fullname = $providerDetails['fullname'];
-      $country = $providerDetails['country'];
-      $city = $providerDetails['city'];
-      $address = $providerDetails['address'];
-      $profile_picture = $providerDetails['profile_picture'];
+    if ($providerDetails) {
+        $provider_img = $providerDetails['fullname'];
+        $country = $providerDetails['country'];
+        $city = $providerDetails['city'];
+        $address = $providerDetails['address'];
+        $profile_picture = $providerDetails['profile_picture'];
+        $workingImages = getProviderWorkingImages($conn, $provider_id);
+    }
+}
+function getServicePricesAndImages($conn, $servicesArray)
+{
+    $data = array();
 
-      // Retrieve provider's working images
-      $workingImages = getProviderWorkingImages($conn, $provider_id);
-  }
+    foreach ($servicesArray as $individualService) {
+        $serviceName = mysqli_real_escape_string($conn, $individualService);
+
+        $sql = "SELECT price, image FROM categories WHERE heading = '$serviceName'";
+        $result = $conn->query($sql);
+
+        if (!$result) {
+            die("SQL Error: " . mysqli_error($conn));
+        }
+
+        $row = $result->fetch_assoc();
+        $price = $row['price'];
+        $imagePath = $row['image'];
+
+        // If the price is 'N/A', set a default value
+        if ($price === 'N/A') {
+            $price = 'Price not available';
+        }
+
+        // Store the price and image path in the data array
+        $data[$individualService] = [
+            'price' => $price,
+            'image' => $imagePath,
+        ];
+    }
+
+    return $data;
 }
 
-function getServicePricesAndImages($conn, $servicesArray) {
-  $data = array();
-
-  foreach ($servicesArray as $individualService) {
-      $serviceName = mysqli_real_escape_string($conn, $individualService);
-
-      $sql = "SELECT price, image FROM categories WHERE heading = '$serviceName'";
-      $result = $conn->query($sql);
-
-      if (!$result) {
-          die("SQL Error: " . mysqli_error($conn));
-      }
-
-      $row = $result->fetch_assoc();
-      $price = $row['price'];
-      $imagePath = $row['image'];
-
-      // If the price is 'N/A', set a default value
-      if ($price === 'N/A') {
-          $price = 'Price not available';
-      }
-
-      // Store the price and image path in the data array
-      $data[$individualService] = [
-          'price' => $price,
-          'image' => $imagePath,
-      ];
-  }
-
-  return $data;
-}
-
-// Call this function to get service prices and images
 $serviceData = getServicePricesAndImages($conn, $servicesArray);
 
-
-
-// Call this function to get service prices
-// $servicePrices = getServicePrices($conn, $servicesArray);
-
+// The code related to inserting data into the database has been commented out.
 ?>
+
 <!DOCTYPE html>
 <html lang="zxx">
 
@@ -224,7 +208,7 @@ $serviceData = getServicePricesAndImages($conn, $servicesArray);
         <div class="col-lg-12 col-md-12">
           <div class="card px-0 pt-4 pb-0 mt-3 mb-3">
 
-            <form id="msform">
+            <form method="post" action="" id="msform">
               <!-- progressbar -->
               <ul id="progressbar">
                 <li class="active" id="account"><strong>Provider Selected</strong></li>
@@ -243,7 +227,9 @@ $serviceData = getServicePricesAndImages($conn, $servicesArray);
                     <div class="col-lg-3 col-sm-12 align-self-center">
                       <div class="provider-name">
                         <img src="../provider/<?php echo $profile_picture ?>" />
-                        <h4><?php echo $fullname; ?></h4>
+                        <h4>
+                          <?php echo $provider_img; ?>
+                        </h4>
                       </div>
                     </div>
                     <div class="col-lg-5 col-sm-12 align-self-center">
@@ -261,35 +247,39 @@ $serviceData = getServicePricesAndImages($conn, $servicesArray);
                     </div>
                     <ul class="detaillist" style="width: 100%;">
                       <li><i style="color: #70BE44" class="fa fa-check" aria-hidden="true"></i> 50+ Completed task</li>
-                      <li><i style="color: #70BE44" class="fa fa-map-marker" aria-hidden="true"></i> <?php echo $city ?>, <?php echo $address ?></li>
-                      <li><i style="color: #70BE44;" class="fa fa-clock" aria-hidden="true"></i> Available hour <?php echo $working_timings_from ?> -
-                        <?php echo $working_timings_to ?> </li>
+                      <li><i style="color: #70BE44" class="fa fa-map-marker" aria-hidden="true"></i>
+                        <?php echo $city ?>,
+                        <?php echo $address ?>
+                      </li>
+                      <li><i style="color: #70BE44;" class="fa fa-clock" aria-hidden="true"></i> Available hour
+                        <?php echo $working_timings_from ?> -
+                        <?php echo $working_timings_to ?>
+                      </li>
                     </ul>
                     <div class="about-provider">
                       <h4 style="width: 100%;">About me</h4>
-                      <p style="width: 100%;">I have 10+ years experience in vehicle mechanics and have my own
-                        equipment, I would <br>
-                        love to help you get your job done and satisfied reviews.
+                      <p style="width: 100%;">
+                        <?php echo $additional_content ?>
                       </p>
                       <h4 style="width: 100%;"><a href="#">Read More</a></h4>
                     </div>
                   </div>
 
                   <div class="row" style="padding: 40px 0px;">
-                    <div class="col-lg-6 col-sm-12">
+                    <div class="col-lg-5 col-sm-12">
                       <div class="gallerinfo">
                         <h5>Work Done Gallery</h5>
                         <ul style="width: 100%;">
                           <?php
                           // $imageHtml = '';
 foreach ($workingImages as $imagePath) {
-    echo  "<img src='$imagePath' />";
+    echo  "<li><a href='../provider/$imagePath'><img src='../provider/$imagePath' /></a></li>";
 }
                           ?>
                         </ul>
                       </div>
                     </div>
-                    <div class="col-lg-6 col-sm-12">
+                    <div class="col-lg-7 col-sm-12">
                       <div class="speciality-info">
                         <h5>Specialities</h5>
                         <!-- <ul class="specialitylist" style="width: 100%;">
@@ -298,22 +288,26 @@ foreach ($workingImages as $imagePath) {
                                             <li><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</li>
                                         </ul> -->
                         <!-- <div class="row"> -->
-                        <ul class='specialitylist' style='width: 100%;'>
-    <?php
+                        <ul style='width: 100%;'>
+                          <div class="row">
+
+
+                            <?php
     foreach ($servicesArray as $individualService) {
         $serviceInfo = $serviceData[$individualService];
         $price = $serviceInfo['price'];
         $imagePath = $serviceInfo['image'];
 
-        echo "<li><img src='../admin/uploads/$imagePath' /> $individualService</li>";
+        echo "<div class='col-lg-6'><li><img src='../admin/uploads/$imagePath' /> $individualService</li></div>";
     }
     ?>
-</ul>
+                          </div>
+                        </ul>
 
                         <!-- </div> -->
 
                         <ul class="specialitylist" style="width: 100%;">
-                          
+
                           <!-- <li><img src="./images/providerselected/Grass.png" /> Grass Cutting</li> -->
                           <!-- <li><img src="./images/providerselected/Cover Up.png" /> Spring Cleanup</li> -->
                         </ul>
@@ -405,7 +399,7 @@ foreach ($workingImages as $imagePath) {
                   <div class="select-service-booking">
                     <h4>Select Services you need</h4>
                     <div class="row">
-                                      <?php
+                      <?php
                           foreach ($servicesArray as $individualService) {
                               echo "<div class='col-lg-3 mb-3 mb-lg-0'>";
                               echo "<label><input type='checkbox' name='selected_services[]' value='$individualService'>$individualService</label>";
@@ -444,10 +438,24 @@ foreach ($workingImages as $imagePath) {
                   <div class="upload-field-booking">
                     <h2>Upload Images of your Place</h2>
                     <label style="background-image: url(./images/providerselected/upload.PNG);">
-                      <input type="file" name="File Upload" value="value" multiple max="5"></label>
+                    <input type="file" class="form-control" id="images" name="images[]" onchange="preview_images();" multiple accept="image/*" />
+</label>
                     <p style="text-align: left;">Minimum 5 images of Of your service area , make sure image should be
                       clear</p>
+                      <div class="row" id="image_preview"></div>
+
                   </div>
+                  <!-- <div class="gallery-section-service" style="padding: 40px 0px 30px 0px;">
+                  <h2>Your Past work Images</h2>
+                  <div class="container">
+                      <div class="row">
+                          <div class="my-2" style="background-image: url(./images/upload.PNG);">
+                              <input type="file" class="form-control" id="images" name="images[]" onchange="preview_images();" multiple accept="image/*" />
+                          </div>
+                      </div>
+                      <div class="row" id="image_preview"></div>
+                  </div>
+                </div> -->
 
                   <div class="advancebook-bookingtab">
                     <div class="col-lg-9 mb-9 mb-lg-0">
@@ -457,326 +465,354 @@ foreach ($workingImages as $imagePath) {
                       <div class="toggle-button-cover">
                         <div class="button-cover">
                           <div class="button r" id="button-1">
-                            <input type="checkbox" class="checkbox" />
+                            <input type="checkbox" class="checkbox" id="toggle-switch" />
                             <div class="knobs"></div>
                             <div class="layer"></div>
                           </div>
+
+
+
+
+
                         </div>
                       </div>
                     </div>
                   </div>
-                  <?php
-                  include 'connection.php';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Get the selected date from the POST request
-    $year = $_POST['year'];
-    $month = $_POST['month'];
-    $day = $_POST['day'];
 
-    // Insert the date into your MySQL database
-    // Modify the following code based on your database connection and SQL query
 
-    $insertQuery = "INSERT INTO your_table (year, month, day) VALUES ('$year', '$month', '$day')";
-    $result = mysqli_query($conn, $insertQuery);
-
-    if ($result) {
-        echo 'Date inserted successfully!';
-    } else {
-        echo 'Error: ' . mysqli_error($conn);
-    }
-}
-?>
 
                   <div id='main'>
-                    <h3>Choose Your Time & Date </h3>
+                    <h3>Choose Your Time & Date</h3>
+                    <input type="hidden" value="<?php echo $userId?>" id="customer-id" placeholder="Enter Customer ID">
                     <div id='app'></div>
                   </div>
-                  <div class="booked-hours">
-                    <h4>Already Booked hours</h4>
-                    <div class="row">
-                      <div class="col-lg-4 mb-4 mb-lg-0">
-                          <button type="button" class="green">6PM -9 PM</button>
-                      </div>
-                      <div class="col-lg-4 mb-4 mb-lg-0">
-                          <button type="button" class="orange">10 AM -12 PM</button>
-                      </div>
-                      <div class="col-lg-4 mb-4 mb-lg-0">
-                          <button type="button" class="blue">2PM-4PM</button>
+                  <div id="content-on" style="display: none;width:100%">
+                    <div class="row advnce" style="padding: 60px 0px;">
+                      <div class="advancebooking-calender">
+                        <h2>Set Your Advance Booking</h2>
+                        <div class="innerrow">
+                          <div class="col-lg-6 mb-6 mb-lg-0 align-items-center">
+                            <h1> <img src="./images/calender.png" />29-June-2023 , MON</h1>
+                          </div>
+                          <div class="col-lg-6 mb-6 mb-lg-0" style="text-align:right;">
+                            <h5>Hours Require <span>02</span></h5>
+                            <ul class="time-advance">
+                              <li>10 am -12 am</li>
+                              <li>10 am -12 am</li>
+                            </ul>
+                            <ul class="time-advance1">
+                              <li>10 am -12 am</li>
+                              <li>10 am -12 am</li>
+                            </ul>
+                          </div>
 
+                        </div>
+                        <div class="innerrow" style="margin-top: 30px; background-color: #E7212121;">
+                          <div class="col-lg-6 mb-6 mb-lg-0 align-items-center">
+                            <h1> <img src="./images/calender.png" />29-June-2023 , MON</h1>
+                          </div>
+                          <div class="col-lg-6 mb-6 mb-lg-0" style="text-align:right;">
+                            <h5>Hours Require <span>02</span></h5>
+                            <ul class="time-advance">
+                              <li>10 am -12 am</li>
+                              <li>10 am -12 am</li>
+                            </ul>
+                            <ul class="time-advance1">
+                              <li>10 am -12 am</li>
+                              <li>10 am -12 am</li>
+                            </ul>
+                          </div>
+
+                        </div>
+
+                        <div class="innerrow"
+                          style="margin-top: 30px; background-color: #ffc4006e                                          ;">
+                          <div class="col-lg-6 mb-6 mb-lg-0 align-items-center">
+                            <h1> <img src="./images/calender.png" />29-June-2023 , MON</h1>
+                          </div>
+                          <div class="col-lg-6 mb-6 mb-lg-0" style="text-align:right;">
+                            <h5>Hours Require <span>02</span></h5>
+                            <ul class="time-advance">
+                              <li>10 am -12 am</li>
+                              <li>10 am -12 am</li>
+                            </ul>
+                            <ul class="time-advance1">
+                              <li>10 am -12 am</li>
+                              <li>10 am -12 am</li>
+                            </ul>
+                          </div>
+
+                        </div>
                       </div>
+                    </div>
+                    <div class="shortmessage">
+                      <h4 style="text-align: center;">Describe your task</h4>
+                      <textarea placeholder="Give your Note to the worker"></textarea>
                     </div>
                   </div>
-                  <script>
-  const selectedDate = document.querySelector('.calendar-day.active');
+                  <div id="content-off" style="display: block;width:100%">
+                      <div class="booked-hours">
+                        <h4>Already Booked hours</h4>
+                        <div class="row">
+                          <div class="col-lg-4 mb-4 mb-lg-0">
+                            <button type="button" class="green">6PM -9 PM</button>
+                          </div>
+                          <div class="col-lg-4 mb-4 mb-lg-0">
+                            <button type="button" class="orange">10 AM -12 PM</button>
+                          </div>
+                          <div class="col-lg-4 mb-4 mb-lg-0">
+                            <button type="button" class="blue">2PM-4PM</button>
 
-  selectedDate.addEventListener('click', function() {
-    const year = selectedDate.getAttribute('date-year');
-    const month = selectedDate.getAttribute('date-month');
-    const day = selectedDate.getAttribute('date-day');
+                          </div>
+                        </div>
+                      </div>
+                      <div class="text-header">
+                        <h4>Set Time</h4>
+                      </div>
+                      <div class="time-selection">
+                        <div class="hours-slots">
+                          <ul id="custom-timeslot">
+                            <li>
+                              <p>01</p>
+                            </li>
+                            <li>
+                              <p oncha>02</p>
+                            </li>
+                            <li>
+                              <p>03</p>
+                            </li>
+                            <li>
+                              <p>04</p>
+                            </li>
+                            <li>
+                              <p>05</p>
+                            </li>
+                            <li>
+                              <p>06</p>
+                            </li>
+                            <li>
+                              <p>07</p>
+                            </li>
+                            <li>
+                              <p>08</p>
+                            </li>
+                            <li>
+                              <p>09</p>
+                            </li>
+                            <li>
+                              <p>10</p>
+                            </li>
+                            <li>
+                              <p>11</p>
+                            </li>
+                            <li>
+                              <p>12</p>
+                            </li>
+                          </ul>
+                        </div>
 
-    // Send the selected date to the PHP script using an AJAX request
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', 'your_php_script.php', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                        <div class="ratio-time">:</div>
+                        <div class="hours-slots">
 
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4 && xhr.status === 200) {
-        // Handle the response from your PHP script
-        console.log(xhr.responseText);
-      }
-    };
+                          <ul id="custom-timeslot1">
+                            <li>
+                              <p>00</p>
+                            </li>
+                            <li>
+                              <p>01</p>
+                            </li>
+                            <li>
+                              <p>02</p>
+                            </li>
+                            <li>
+                              <p>03</p>
+                            </li>
+                            <li>
+                              <p>04</p>
+                            </li>
+                            <li>
+                              <p>05</p>
+                            </li>
+                            <li>
+                              <p>06</p>
+                            </li>
+                            <li>
+                              <p>07</p>
+                            </li>
+                            <li>
+                              <p>08</p>
+                            </li>
+                            <li>
+                              <p>09</p>
+                            </li>
+                            <li>
+                              <p>10</p>
+                            </li>
+                            <li>
+                              <p>11</p>
+                            </li>
+                            <li>
+                              <p>12</p>
+                            </li>
+                            <li>
+                              <p>13</p>
+                            </li>
+                            <li>
+                              <p>14</p>
+                            </li>
+                            <li>
+                              <p>15</p>
+                            </li>
+                            <li>
+                              <p>16</p>
+                            </li>
+                            <li>
+                              <p>17</p>
+                            </li>
+                            <li>
+                              <p>18</p>
+                            </li>
+                            <li>
+                              <p>19</p>
+                            </li>
+                            <li>
+                              <p>20</p>
+                            </li>
+                            <li>
+                              <p>21</p>
+                            </li>
+                            <li>
+                              <p>22</p>
+                            </li>
+                            <li>
+                              <p>23</p>
+                            </li>
+                            <li>
+                              <p>24</p>
+                            </li>
+                            <li>
+                              <p>25</p>
+                            </li>
+                            <li>
+                              <p>26</p>
+                            </li>
+                            <li>
+                              <p>27</p>
+                            </li>
+                            <li>
+                              <p>28</p>
+                            </li>
+                            <li>
+                              <p>29</p>
+                            </li>
+                            <li>
+                              <p>30</p>
+                            </li>
+                            <li>
+                              <p>31</p>
+                            </li>
+                            <li>
+                              <p>32</p>
+                            </li>
+                            <li>
+                              <p>33</p>
+                            </li>
+                            <li>
+                              <p>34</p>
+                            </li>
+                            <li>
+                              <p>35</p>
+                            </li>
+                            <li>
+                              <p>36</p>
+                            </li>
+                            <li>
+                              <p>37</p>
+                            </li>
+                            <li>
+                              <p>38</p>
+                            </li>
+                            <li>
+                              <p>39</p>
+                            </li>
+                            <li>
+                              <p>40</p>
+                            </li>
+                            <li>
+                              <p>41</p>
+                            </li>
+                            <li>
+                              <p>42</p>
+                            </li>
+                            <li>
+                              <p>43</p>
+                            </li>
+                            <li>
+                              <p>44</p>
+                            </li>
+                            <li>
+                              <p>45</p>
+                            </li>
+                            <li>
+                              <p>46</p>
+                            </li>
+                            <li>
+                              <p>47</p>
+                            </li>
+                            <li>
+                              <p>48</p>
+                            </li>
+                            <li>
+                              <p>49</p>
+                            </li>
+                            <li>
+                              <p>50</p>
+                            </li>
+                            <li>
+                              <p>51</p>
+                            </li>
+                            <li>
+                              <p>52</p>
+                            </li>
+                            <li>
+                              <p>53</p>
+                            </li>
+                            <li>
+                              <p>54</p>
+                            </li>
+                            <li>
+                              <p>55</p>
+                            </li>
+                            <li>
+                              <p>56</p>
+                            </li>
+                            <li>
+                              <p>57</p>
+                            </li>
+                            <li>
+                              <p>58</p>
+                            </li>
+                            <li>
+                              <p>59</p>
+                            </li>
+                          </ul>
+                        </div>
 
-    xhr.send(`year=${year}&month=${month}&day=${day}`);
-  });
-</script>
-
-                  <div class="text-header">
-                    <h4>Set Time</h4>
-
-                  </div>
-                  <div class="time-selection">
-                    <div class="hours-slots">
-                      <ul id="custom-timeslot">
-                        <li>
-                          <p>01</p>
-                        </li>
-                        <li>
-                          <p oncha>02</p>
-                        </li>
-                        <li>
-                          <p>03</p>
-                        </li>
-                        <li>
-                          <p>04</p>
-                        </li>
-                        <li>
-                          <p>05</p>
-                        </li>
-                        <li>
-                          <p>06</p>
-                        </li>
-                        <li>
-                          <p>07</p>
-                        </li>
-                        <li>
-                          <p>08</p>
-                        </li>
-                        <li>
-                          <p>09</p>
-                        </li>
-                        <li>
-                          <p>10</p>
-                        </li>
-                        <li>
-                          <p>11</p>
-                        </li>
-                        <li>
-                          <p>12</p>
-                        </li>
-                      </ul>
-                    </div>
-
-                    <div class="ratio-time">:</div>
-                    <div class="hours-slots">
-
-                      <ul id="custom-timeslot1">
-                        <li>
-                          <p>00</p>
-                        </li>
-                        <li>
-                          <p>01</p>
-                        </li>
-                        <li>
-                          <p>02</p>
-                        </li>
-                        <li>
-                          <p>03</p>
-                        </li>
-                        <li>
-                          <p>04</p>
-                        </li>
-                        <li>
-                          <p>05</p>
-                        </li>
-                        <li>
-                          <p>06</p>
-                        </li>
-                        <li>
-                          <p>07</p>
-                        </li>
-                        <li>
-                          <p>08</p>
-                        </li>
-                        <li>
-                          <p>09</p>
-                        </li>
-                        <li>
-                          <p>10</p>
-                        </li>
-                        <li>
-                          <p>11</p>
-                        </li>
-                        <li>
-                          <p>12</p>
-                        </li>
-                        <li>
-                          <p>13</p>
-                        </li>
-                        <li>
-                          <p>14</p>
-                        </li>
-                        <li>
-                          <p>15</p>
-                        </li>
-                        <li>
-                          <p>16</p>
-                        </li>
-                        <li>
-                          <p>17</p>
-                        </li>
-                        <li>
-                          <p>18</p>
-                        </li>
-                        <li>
-                          <p>19</p>
-                        </li>
-                        <li>
-                          <p>20</p>
-                        </li>
-                        <li>
-                          <p>21</p>
-                        </li>
-                        <li>
-                          <p>22</p>
-                        </li>
-                        <li>
-                          <p>23</p>
-                        </li>
-                        <li>
-                          <p>24</p>
-                        </li>
-                        <li>
-                          <p>25</p>
-                        </li>
-                        <li>
-                          <p>26</p>
-                        </li>
-                        <li>
-                          <p>27</p>
-                        </li>
-                        <li>
-                          <p>28</p>
-                        </li>
-                        <li>
-                          <p>29</p>
-                        </li>
-                        <li>
-                          <p>30</p>
-                        </li>
-                        <li>
-                          <p>31</p>
-                        </li>
-                        <li>
-                          <p>32</p>
-                        </li>
-                        <li>
-                          <p>33</p>
-                        </li>
-                        <li>
-                          <p>34</p>
-                        </li>
-                        <li>
-                          <p>35</p>
-                        </li>
-                        <li>
-                          <p>36</p>
-                        </li>
-                        <li>
-                          <p>37</p>
-                        </li>
-                        <li>
-                          <p>38</p>
-                        </li>
-                        <li>
-                          <p>39</p>
-                        </li>
-                        <li>
-                          <p>40</p>
-                        </li>
-                        <li>
-                          <p>41</p>
-                        </li>
-                        <li>
-                          <p>42</p>
-                        </li>
-                        <li>
-                          <p>43</p>
-                        </li>
-                        <li>
-                          <p>44</p>
-                        </li>
-                        <li>
-                          <p>45</p>
-                        </li>
-                        <li>
-                          <p>46</p>
-                        </li>
-                        <li>
-                          <p>47</p>
-                        </li>
-                        <li>
-                          <p>48</p>
-                        </li>
-                        <li>
-                          <p>49</p>
-                        </li>
-                        <li>
-                          <p>50</p>
-                        </li>
-                        <li>
-                          <p>51</p>
-                        </li>
-                        <li>
-                          <p>52</p>
-                        </li>
-                        <li>
-                          <p>53</p>
-                        </li>
-                        <li>
-                          <p>54</p>
-                        </li>
-                        <li>
-                          <p>55</p>
-                        </li>
-                        <li>
-                          <p>56</p>
-                        </li>
-                        <li>
-                          <p>57</p>
-                        </li>
-                        <li>
-                          <p>58</p>
-                        </li>
-                        <li>
-                          <p>59</p>
-                        </li>
-                      </ul>
-                    </div>
-
-                    <div class="hours-slots">
-                      <ul id="custom-timeslot2">
-                        <li>
-                          <p>AM</p>
-                        </li>
-                        <li>
-                          <p>PM</p>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                  <div class="shortmessage">
-                    <h4>Task Description</h4>
-                    <textarea placeholder="Give your Note to the worker"></textarea>
+                        <div class="hours-slots">
+                          <ul id="custom-timeslot2">
+                            <li>
+                              <p>AM</p>
+                            </li>
+                            <li>
+                              <p>PM</p>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div class="shortmessage">
+                        <h4>Task Description</h4>
+                        <textarea id="task-description" placeholder="Give your Note to the worker"></textarea>
+                      </div>
                   </div>
                 </div>
                 <input type="button" name="next" class="next action-button" value="Continue" />
@@ -788,9 +824,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="your-offer-selected">
                   <div class="row">
                     <div class="col-lg-6 mb-3 mb-lg-0">
-                        <h2>Your offers for services selected</h2>
-                        <div class="unorderlist-selected" id="selected-services-list">
-                              <?php
+                      <h2>Your offers for services selected</h2>
+                      <div class="unorderlist-selected" id="selected-services-list">
+                        <?php
                               foreach ($servicesArray as $individualService) {
                                   $serviceInfo = $serviceData[$individualService];
                                   $price = $serviceInfo['price'];
@@ -798,12 +834,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                   echo "<li><em><img src='../admin/uploads/$imagePath' />$individualService</em><span>$" . $price . "</span></li>";
                               }
                               ?>
-                        </div>
-                        <div class="totalselected">
-                            <li><em><img src="./images/providerselected/total.png" />Total Charges</em>
-                              <span id="total-amount">$0</span> <!-- Add an empty span for total amount -->
-                            </li>
-                        </div>
+                      </div>
+                      <div class="totalselected">
+                        <li><em><img src="./images/providerselected/total.png" />Total Charges</em>
+                          <span id="total-amount">$0</span> <!-- Add an empty span for total amount -->
+                        </li>
+                      </div>
                     </div>
 
                     <div class="col-lg-6 mb-3 mb-lg-0">
@@ -811,13 +847,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="order-details-checkout">
                           <div class="text-order-image">
                             <img src="../provider/<?php echo $profile_picture ?>" />
-                            <h2><?php echo $fullname; ?><br> <span>Lawn Mower</span></h2>
+                            <h2>
+                              <?php echo $fullname; ?><br> <span>Lawn Mower</span>
+                            </h2>
 
                           </div>
                           <ul class="order-details-minor" style="width: 100%;">
                             <h4>Booking Timing</h4>
                             <li><i style="color: #70BE44;" class="fa fa-clock" aria-hidden="true"></i>
                               21, August,4:00 AM, SUN </li>
+                              
                           </ul>
                           <div class="pricedetails1">
                             <h4>Services Selected</h4>
@@ -830,7 +869,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                   echo "<li><em>$individualService</em><span style='color: #70BE44;'>$" . $price . "</span></li>";
                               }
                               ?>
-                        </ul>
+                            </ul>
                             <!-- <ul >
                               <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
                               <li><em>Snow Removal</em> <span style="color: #70BE44;">$ 100.00</span></li>
@@ -839,10 +878,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           </div>
                           <div class="taskdes-checkout">
                             <h4>Task Description</h4>
-                            <p>I'm Stuck at Norway highway near Crown valley street, I have to
-                              wash & tint my car as soon as possible because of this extreme
-                              sunny weather. kindly come fast ASAP I'm waiting for you service.
-                            </p>
+                            <p id="display-task-description"></p>
+
                           </div>
                         </div>
                       </div>
@@ -850,7 +887,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   </div>
                 </div>
 
-                <input type="button" name="next" class="submit next action-button"
+                <input type="button" id="submit-date" name="next" class="submit next action-button"
                   value="Proceed & Send Request to Provider" />
                 <input type="button" name="previous" class="previous action-button-previous" value="Previous" />
               </fieldset>
@@ -862,7 +899,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                       <p>Your Offer Has been successfully sent to service provider</p>
                     </div>
                   </div>
-                 
+
                 </div>
 
               </fieldset>
@@ -938,6 +975,153 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </footer>
 
   <!-- footer end -->
+  <script>
+  const toggleSwitch = document.getElementById("toggle-switch");
+  const contentOn = document.getElementById("content-on");
+  const contentOff = document.getElementById("content-off");
+
+  toggleSwitch.addEventListener("change", function () {
+    if (toggleSwitch.checked) {
+      contentOn.style.display = "block"; // Show the "on" content
+      contentOff.style.display = "none"; // Hide the "off" content
+    } else {
+      contentOn.style.display = "none"; // Hide the "on" content
+      contentOff.style.display = "block"; // Show the "off" content
+    }
+  });
+</script>
+<script>
+    function preview_images() {
+        var preview = document.getElementById("image_preview");
+        var files = document.getElementById("images").files;
+
+        if (files.length !== 5) {
+            alert("Please select exactly 5 images.");
+            return;
+        }
+
+        preview.innerHTML = ""; // Clear previous preview
+
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var reader = new FileReader();
+
+            reader.onload = function (e) {
+                var image = document.createElement("img");
+                image.src = e.target.result;
+                image.className = "preview-image";
+                preview.appendChild(image);
+            };
+
+            reader.readAsDataURL(file);
+        }
+    }
+</script>
+<script>
+    // JavaScript
+    document.getElementById('task-description').addEventListener('input', function () {
+        // Get the input from the textarea
+        const userContent = this.value;
+
+        // Display the input in the <p> element
+        document.getElementById('display-task-description').textContent = userContent;
+    });
+
+    document.getElementById('submit-date').addEventListener('click', function () {
+        // Find the selected date from the calendar
+        const selectedDateElement = document.querySelector('.calendar-day.active');
+        if (selectedDateElement) {
+            const dateYear = selectedDateElement.getAttribute('date-year');
+            const dateMonth = selectedDateElement.getAttribute('date-month');
+            const dateDay = selectedDateElement.getAttribute('date-day');
+
+            // Get the selected time
+            const selectedTime = getSelectedTime();
+
+            // Get the customer ID from the input field
+            const customerId = document.getElementById('customer-id').value;
+
+            // Get the task description from the <p> element
+            const userContent = document.getElementById('display-task-description').textContent;
+
+            // Get the selected services and total amount
+            const selectedServices = getSelectedServices();
+            const totalAmount = calculateTotalAmount();
+
+            // Create a JavaScript object with all the data
+            const data = {
+                customerId: customerId,
+                selectedDate: {
+                    year: dateYear,
+                    month: dateMonth,
+                    day: dateDay,
+                },
+                selectedTime: selectedTime,
+                userContent: userContent,
+                selectedServices: selectedServices,
+                totalAmount: totalAmount,
+            };
+
+            // Send the data to the server using AJAX
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'php.php'); // Replace with your PHP script URL
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify(data));
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // Handle the server's response here, if needed
+                    console.log(xhr.responseText);
+                }
+            };
+        } else {
+            alert('Please select a date from the calendar.');
+        }
+    });
+
+    // Implement a function to get the selected time from your time selection elements
+    function getSelectedTime() {
+        const amPmElement = document.querySelector('#custom-timeslot2 li.selected p');
+        const hourElement = document.querySelector('#custom-timeslot li.selected p');
+        const minuteElement = document.querySelector('#custom-timeslot1 li.selected p');
+
+        const amPm = amPmElement ? amPmElement.textContent : '';
+        const hour = hourElement ? hourElement.textContent : '';
+        const minute = minuteElement ? minuteElement.textContent : '00';
+
+        return `${hour}:${minute} ${amPm}`;
+    }
+
+    // Function to get the selected services
+    function getSelectedServices() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        const selectedServices = [];
+
+        checkboxes.forEach((checkbox) => {
+            if (checkbox.checked) {
+                selectedServices.push(checkbox.value);
+            }
+        });
+
+        return selectedServices;
+    }
+
+    // Function to calculate the total amount based on selected services
+    function calculateTotalAmount() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        let totalAmount = 0;
+
+        checkboxes.forEach((checkbox) => {
+            if (checkbox.checked) {
+                const serviceInfo = <?php echo json_encode($serviceData); ?>; // Provided by PHP
+                const price = serviceInfo[checkbox.value].price;
+                totalAmount += parseFloat(price);
+            }
+        });
+
+        return totalAmount.toFixed(2);
+    }
+</script>
 
   
   <script>
@@ -995,6 +1179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Initial update when the page loads
     updateSelectedServices();
 </script>
+
 
   <!-- jQuery -->
   <script src="plugins/jQuery/jquery.min.js"></script>

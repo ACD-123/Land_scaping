@@ -7,22 +7,18 @@ if ($conn->connect_error) {
 
 if (isset($_POST['set_featured'])) {
     $provider_id = $_POST['provider_id'];
-    $status = 'status'; // Set the status to 'feature' as required
+    $status = 'feature'; // Set the status to 'feature' as required
 
     // Update the status for the specific provider
     $sql = "UPDATE provider_registration SET status = '$status' WHERE id = $provider_id";
-    
+
     if ($conn->query($sql) === TRUE) {
         $error_message = "Provider set as featured successfully.";
     } else {
         $error_message = "Error: " . $sql . "<br>" . $conn->error;
     }
 }
-
-// Close the database connection
-$conn->close();
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -80,54 +76,72 @@ $conn->close();
                 <h1>Providers</h1>
               </div>
               <?php
-              // Include your database connection script
-              include 'connection.php';
+// Include your database connection script
+include 'connection.php';
 
-              // Retrieve services from the database
-              $sql = "SELECT * FROM provider_registration where role_id = 2 Limit 3";
-              $result = $conn->query($sql);
-              if ($result->num_rows > 0) {
-                  while ($row = $result->fetch_assoc()) {
-                      $fullname = $row['fullname'];
-                      $country = $row['country'];
-                      $city = $row['city'];
-                      $profile_picture = $row['profile_picture'];
-                      $email = $row['email'];
-                      $provider_id = $row['id']; // Added to get the provider ID
+// Function to get additional content by provider ID
+function getProviderAdditionalContent($conn, $provider_id)
+{
+    // Sanitize the input to prevent SQL injection
+    $provider_id = mysqli_real_escape_string($conn, $provider_id);
 
-                      // Wrap the provider card with a link to provider.php
-                      echo '<div class="col-lg-4 mb-4 mb-lg-0">';
-                      echo '<a href="#" onclick="showProviderDetails(this)" data-fullname="' . $fullname . '" data-email="' . $email . '" data-country="' . $country . '" data-city="' . $city . '" data-profile-picture="../provider/' . $profile_picture . '" data-description="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s">';
-                      echo '<div class="provider-card">';
-                      echo '<div style="width:100%; height:200px;">';
-                      echo '<img style="object-fit:contain; width:100%; height:100%" src="../provider/' . $profile_picture . '" width="100%"/>';
-                      echo '</div>';
-                      echo '<div class="feature-info-box">';
-                      echo '<div style="display:flex; justify-content:space-between; align-items:center">';
-                      echo '<h4>' . $fullname . '</h4>';
-                      echo '<h6 style="color:#7A7A7A"><i class="fa fa-comment" aria-hidden="true" style="color:#70be44"></i> Contact for pricing</h6>';
-                      echo '</div>';
-                      echo '<p>Lorem Ipsum is simply dummy text of the printing and typesetting ';
-                      echo 'industry. Lorem Ipsum has been the industry\'s standard dummy text ';
-                      echo 'ever since the 1500s</p>';
-                      echo '<ul class="featurelist-2">';
-                      echo '<li><i class="fa fa-user" aria-hidden="true"></i> Worker</li>';
-                      echo '<li class="prc2"><b>4.0</b> <span>(10) </span><img src="../customer/images/featured-provider/star.png"/></li>';
-                      echo '</ul>';
-                      echo '<ul class="featurelist-3">';
-                      echo '<li><i class="fa fa-trophy" aria-hidden="true"></i>Hired 11 Times</li>';
-                      echo '<li class="prc3"><i class="fa fa-location-arrow" aria-hidden="true"></i> ' . $city . '</li>';
-                      echo '</ul>';
-                      echo '</div>';
-                      echo '</div>';
-                      echo '</a>';
-                      echo '</div>';
-                  }
-              } else {
-                  echo "No services found.";
-              }
+    // Retrieve additional content for the provider from the 'provider_services' table
+    $sql = "SELECT additional_content FROM provider_services WHERE provider_id = '$provider_id'";
+    $result = $conn->query($sql);
+
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        return $row['additional_content'];
+    }
+
+    return null;
+}
+
+// Retrieve services from the database
+$sql = "SELECT * FROM provider_registration where role_id = 2 Limit 3";
+$result = $conn->query($sql);
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $fullname = $row['fullname'];
+        $country = $row['country'];
+        $city = $row['city'];
+        $profile_picture = $row['profile_picture'];
+        $email = $row['email'];
+        $provider_id = $row['id']; // Added to get the provider ID
+
+        // Get the additional content for this provider
+        $additionalContent = getProviderAdditionalContent($conn, $provider_id);
+
+        // Wrap the provider card with a link to provider.php
+        echo '<div class="col-lg-4 mb-4 mb-lg-0">';
+        echo '<a href="#" onclick="showProviderDetails(this)" data-fullname="' . $fullname . '" data-email="' . $email . '" data-country="' . $country . '" data-city="' . $city . '" data-profile-picture="../provider/' . $profile_picture . '" data-description="' . $additionalContent . '" data-provider-id="' . $provider_id . '">';
+        echo '<div class="provider-card">';
+        echo '<div style="width:100%; height:200px;">';
+        echo '<img style="object-fit:contain; width:100%; height:100%" src="../provider/' . $profile_picture . '" width="100%"/>';
+        echo '</div>';
+        echo '<div class="feature-info-box">';
+        echo '<div style="display:flex; justify-content:space-between; align-items:center">';
+        echo '<h4>' . $fullname . '</h4>';
+        echo '<h6 style="color:#7A7A7A"><i class="fa fa-comment" aria-hidden="true" style="color:#70be44"></i> Contact for pricing</h6>';
+        echo '</div>';
+        echo '<p>' . $additionalContent . '</p>'; // Display additional content here
+        echo '<ul class="featurelist-2">';
+        echo '<li><i class="fa fa-user" aria-hidden="true"></i> Worker</li>';
+        echo '<li class="prc2"><b>4.0</b> <span>(10) </span><img src="../assets/images/featured-provider/star.png"/></li>';
+        echo '</ul>';
+        echo '<ul class="featurelist-3">';
+        echo '<li><i class="fa fa-trophy" aria-hidden="true"></i>Hired 11 Times</li>';
+        echo '<li class="prc3"><i class="fa fa-location-arrow" aria-hidden="true"></i> ' . $city . '</li>';
+        echo '</ul>';
+        echo '</div>';
+        echo '</div>';
+        echo '</a>';
+        echo '</div>';
+    }
+} else {
+    echo "No services found.";
+}
 ?>
-
             </div>
           </div>
           </section>
