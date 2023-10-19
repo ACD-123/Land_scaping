@@ -32438,7 +32438,7 @@ ul.paid li.paid-text h5 {
 }
 .first-offer .profileheadsection h3.address {
   font-family: Segoe UI;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 400;
   line-height: 12px;
   letter-spacing: 0em;
@@ -32560,6 +32560,10 @@ div#myModal {
   opacity: 1;
   background-color: #0000006b;
 }
+div#confirmationModal {
+  opacity: 1;
+  background-color: #0000006b;
+}
 .buttons-newoffers button.btn.btn-info.btn-lg:hover {
   background: #000;
   border: 0;
@@ -32589,6 +32593,32 @@ div#myModal {
   background: #F6F6F6;
 }
 .main-panel .modal-title {
+  font-family: Cairo;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 34px;
+  letter-spacing: 0em;
+  text-align: left;
+  color: #000;
+  margin-bottom: 40px;
+}
+.last-day-date {
+  color: red; /* Change this color to your preference */
+  font-weight: bold; /* You can add more styles if needed */
+}
+.progress-gallery ul li{
+  margin-top: 10px;
+}
+.texter{
+  padding: 0 11px;
+  font-family: Cairo;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 22px;
+  letter-spacing: 0em;
+  color: #474747;
+}
+#confirmationModal .main-panel .modal-title {
     font-family: Cairo;
     font-size: 24px;
     font-weight: 700;
@@ -32596,7 +32626,7 @@ div#myModal {
     letter-spacing: 0em;
     text-align: left;
     color: #000;
-    margin-bottom: 40px;
+    margin-bottom: 0px;
 }
 .modal-dialog ul.services-selected-counteroffer li span {
   float: right;

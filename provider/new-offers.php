@@ -1,3 +1,51 @@
+<?php
+// Function to get customer information from the provider_registration table
+function getCustomerInfo($customerId) {
+  global $conn;
+  $sql = "SELECT fullname, profile_picture, address FROM provider_registration WHERE id = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param('s', $customerId);
+  if ($stmt->execute()) {
+      $result = $stmt->get_result();
+      if ($result->num_rows > 0) {
+          $row = $result->fetch_assoc();
+          return $row;
+      }
+  }
+  return array('fullname' => 'N/A', 'address' => 'N/A', 'profile_picture' => 'N/A'); // Provide default values if customer info not found
+}
+// Function to get the price of a service from the categories table
+function getServicePrice($service) {
+  global $conn;
+  $sql = "SELECT price FROM categories WHERE heading = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param('s', $service);
+  if ($stmt->execute()) {
+      $result = $stmt->get_result();
+      if ($result->num_rows > 0) {
+          $row = $result->fetch_assoc();
+          return $row['price'];
+      }
+  }
+  return 'N/A'; // Provide a default value if service price not found
+}
+function getCustomerImagesForProvider($customerId, $providerId) {
+  global $conn;
+  $sql = "SELECT image_path FROM customer_images WHERE customer_id = ? AND provider_id = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param('ss', $customerId, $providerId);
+  if ($stmt->execute()) {
+    $result = $stmt->get_result();
+    $images = array();
+    while ($row = $result->fetch_assoc()) {
+      $images[] = $row['image_path'];
+    }
+    return $images;
+  }
+  return array();
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -252,6 +300,25 @@
       
     </div>
   </div>
+  <!-- <div class="modal fade" id="confirmationModal" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmationModalLabel">Confirm Acceptance</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body h-auto">
+                <h2 class="pb-4">Are you sure you want to accept this offer?</h2>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="acceptOffer(<?php echo $proposalId; ?>)">Accept</button>
+            </div>
+        </div>
+    </div>
+</div> -->
         <!-- START ROW MAIN-PANEL -->
         <div class="row">
 
@@ -260,319 +327,166 @@
             <h1><b style="color: #70BE44;">New </b>Offers</h1>
             <div class="onetime-advancebokingbutton">
               <ul>
-                <li><a href="#"><button style="color: #fff; background-color: #70BE44;">One Time Service</button></a></li>
-                <li><a href="#"><button style="color: #959595; background-color: #E6E6E6;">Advance Bookings</button></a></li>
+                <li><a href="new-offers.php"><button style="color: #fff; background-color: #70BE44;">One Time Service</button></a></li>
+                <li><a href="new-offers-advancebooking.php"><button style="color: #959595; background-color: #E6E6E6;">Advance Bookings</button></a></li>
               </ul>
             </div>
             <!-- FIRST NEW OFFER -->
-        <div class="first-offer">
-            <div class="profileheadsection">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="offerprofile-name">
-                        <img src="./images/profileman.png"/>
-                        <h3>David Johnson<br><b>User ID # 4ISK4DH</b></h3>
+            <?php
+                include 'connection.php';
+
+                $userId = $_SESSION['user_id'];
+
+                $sql = "SELECT * FROM customer_proposal WHERE provider_id = ? AND status = 'new_offer'";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param('s', $userId);
+
+                if ($stmt->execute()) {
+                    $result = $stmt->get_result();
+                    if ($result->num_rows == 0) {
+                      // No orders found for the provider
+                      echo '<h2 class="text-center texter">No new orders available.</h2>';
+                  } else {
+              while ($row = $result->fetch_assoc()) {
+                  $proposalId = $row['id'];
+                  $customerId = $row['customer_id'];
+                  $providerId = $row['provider_id'];
+                  $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+                  $selectedTime = $row['selected_time'];
+                  $userContent = $row['user_content'];
+                  $selectedServices = explode(', ', $row['selected_services']);
+                  $totalAmount = $row['total_amount'];
+                  $current_time = $row['current_time'];
+
+                  // Retrieve customer name and address based on customerId
+                  $customerInfo = getCustomerInfo($customerId);
+
+                  $customerImages = getCustomerImagesForProvider($customerId, $userId);
+
+                  // Output the retrieved customer name and address
+                  $customerName = $customerInfo['fullname'];
+                  $customerAddress = $customerInfo['address'];
+                  $profile_picture = $customerInfo['profile_picture'];
+                  // $image_path = $customerImages['image_path'];
+                ?>
+                 <div class="modal fade" id="confirmationModal" role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="confirmationModalLabel">Confirm Acceptance</h5>
+                                <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button> -->
+                            </div>
+                            <div class="modal-body h-auto">
+                                <h2 class="pb-4">Are you sure you want to accept this offer?</h2>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="acceptOffer(<?php echo $proposalId; ?>)">Accept</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3 d-flex align-items-center">
-                    <h3 class="address"><img src="./images/mappin.png"/> San Francisco, 5th Avenue 22nd Street,
-                        House No- B-242</h3>
-                </div>
-                <div class="col-md-3 d-flex align-items-center">
-                    <h6 style="color: #4492BE;"><img src="./images/scheduled.png"/> 21, August,4:00 AM, SUN</h6>
-                </div>
-                <div class="col-md-3 d-flex align-items-center">
-                    <h4 style="color: #70BE44;">Offered On 22,August,2022</h4>
-                </div>
-            </div>
-        </div>
-
-        <div class="service-selectedsection">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="order-details-progress">
-                        <h2>Order details</h2>
-                        <ul class="orderdetails-lists">
-                          <li><em>Lawn mowing</em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li><em>Snow Removal</em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li><em>Grass Cutting</em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li class="total-amount"><em><b>Total  amount paid</b></em><span style="color: #70BE44;"><b>$ 300.00</b></span></li>
-                        </ul>
+                  <div class="first-offer">
+                      <div class="profileheadsection">
+                      <div class="row">
+                          <div class="col-md-3">
+                              <div>
+                                <div style="width:60px;height:60px;border-radius: 112px;margin-bottom:10px;">
+                                <img style="width: 100%;object-fit: fill;height: 100%;border-radius: 118px;" src="../customer/<?php echo $profile_picture?>"/>
+                                </div>
+                                  <h3><?php echo $customerName?><br><b>User ID # <?php echo $customerId?></b></h3>
+                              </div>
+                          </div>
+                          <div class="col-md-3 d-flex align-items-center">
+                              <h3 class="address"><img src="./images/mappin.png"/> <?php echo $customerAddress?></h3>
+                          </div>
+                          <div class="col-md-3 d-flex align-items-center">
+                              <h6 style="color: #4492BE;"><img src="./images/scheduled.png"/> <?php echo $selectedDate?> / <?php echo $selectedTime?></h6>
+                          </div>
+                          <div class="col-md-3 d-flex align-items-center">
+                              <h4 style="color: #70BE44;font-size: 14px;">Offered On <?php echo $current_time ?></h4>
+                          </div>
                       </div>
-                </div>
-                <div class="col-md-6">
-                    <h6>Task Description</h6>
-                    <p>I'm Stuck at Norway highway near Crown valley street, I 
-                        have to wash & tint my car as soon as possible because 
-                        of this extreme sunny weather. kindly come fast ASAP 
-                        I'm waiting for your service. </p>
-                </div>
-            </div>
-        </div>
+                  </div>
 
-        <div class="location-images-section">
-            <h2>Location Images </h2>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="location-images">
-
-                        <ul class="gallery-images">
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-
-                        </ul>
+                  <div class="service-selectedsection">
+                      <div class="row">
+                          <div class="col-md-6">
+                              <div class="order-details-progress">
+                                  <h2>Order details</h2>
+                                  <ul class="orderdetails-lists">
+                                  <?php
+                                          // Iterate through selected services
+                                          foreach ($selectedServices as $service) {
+                                              // Retrieve the price of the service from the categories table
+                                              $servicePrice = getServicePrice($service);
+                                              ?>
+                                              <li><em><?php echo $service; ?></em><span style="color: #70BE44;">$ <?php echo $servicePrice; ?></span></li>
+                                          <?php } ?>
+                                          <li class="total-amount"><em><b>Total  amount paid</b></em><span style="color: #70BE44;"><b>$ <?php echo $totalAmount?></b></span></li>
+                                  </ul>
+                                </div>
+                          </div>
+                          <div class="col-md-6">
+                              <h6>Task Description</h6>
+                              <p><?php echo $userContent?></p>
+                          </div>
                       </div>
-                </div>
-                <div class="col-md-6">
-                    
-                </div>
-            </div>
-        </div>
+                  </div>
 
-        <div class="buttons-newoffers" style="padding: 30px 0px;">
-            <div class="row">
-                <div class="col-md-6">
-                    <a href="#/"><button type="button" data-toggle="modal" data-target="#myModal">Counter Offer</button></a>
-                </div>
-                <div class="col-md-6">
-                    <a class="ignore1" href="#"><button>Ignore</button></a>
-                </div>
-            </div>
+                  <div class="location-images-section">
+                      <h2>Location Images </h2>
+                      <div class="row">
+                          <div class="col-md-6">
+                              <div class="location-images">
 
-          </div>
-
-</div>
-           <!--  SECOND NEWOFFER -->
-           <div class="first-offer" style="margin-top: 20px;">
-            <div class="profileheadsection">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="offerprofile-name">
-                        <img src="./images/profileman.png"/>
-                        <h3>David Johnson<br><b>User ID # 4ISK4DH</b></h3>
-                    </div>
-                </div>
-                <div class="col-md-3 d-flex align-items-center">
-                    <h3 class="address"><img src="./images/mappin.png"/> San Francisco, 5th Avenue 22nd Street,
-                        House No- B-242</h3>
-                </div>
-                <div class="col-md-3 d-flex align-items-center">
-                    <h6 style="color: #4492BE;"><img src="./images/scheduled.png"/> 21, August,4:00 AM, SUN</h6>
-                </div>
-                <div class="col-md-3 d-flex align-items-center">
-                    <h4 style="color: #70BE44;">Offered On 22,August,2022</h4>
-                </div>
-            </div>
-        </div>
-
-        <div class="service-selectedsection">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="order-details-progress">
-                        <h2>Order details</h2>
-                        <ul class="orderdetails-lists">
-                          <li><em>Lawn mowing</em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li><em>Snow Removal</em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li><em>Grass Cutting</em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li class="total-amount"><em><b>Total  amount paid</b></em><span style="color: #70BE44;"><b>$ 300.00</b></span></li>
-                        </ul>
+                                  <ul class="gallery-images">
+                                  <?php
+                                      foreach (array_slice($customerImages, 0, 5) as $imagePath) {
+                                      ?>
+                                          <li>
+                                              <img src="../customer/<?php echo $imagePath; ?>" alt="Customer Image" />
+                                          </li>
+                                      <?php
+                                      }
+                                      ?>
+                                  </ul>
+                                </div>
+                          </div>
+                          <div class="col-md-6">
+                              
+                          </div>
                       </div>
-                </div>
-                <div class="col-md-6">
-                    <h6>Task Description</h6>
-                    <p>I'm Stuck at Norway highway near Crown valley street, I 
-                        have to wash & tint my car as soon as possible because 
-                        of this extreme sunny weather. kindly come fast ASAP 
-                        I'm waiting for your service. </p>
-                </div>
-            </div>
-        </div>
+                  </div>
 
-        <div class="location-images-section">
-            <h2>Location Images </h2>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="location-images">
-
-                        <ul class="gallery-images">
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-                          <li>
-                            <img src="./images/feature.png"/>
-                          </li>
-
-                        </ul>
+                  <div class="buttons-newoffers" style="padding: 30px 0px;">
+                      <div class="row">
+                      <div class="col-md-4">
+                          <a href="javascript:void(0);">
+                              <button type="button" data-toggle="modal" data-target="#confirmationModal" data-proposal-id="<?php echo $proposalId; ?>">Accept Offer</button>
+                          </a>
                       </div>
-                </div>
-                <div class="col-md-6">
-                    
-                </div>
-            </div>
+
+
+
+                          <div class="col-md-4">
+                              <a href="#/"><button type="button" data-toggle="modal" data-target="#myModal">Counter Offer</button></a>
+                          </div>
+                          <div class="col-md-4">
+                              <a class="ignore1" href="#"><button>Ignore</button></a>
+                          </div>
+                      </div>
+                  </div>
+                  <?php
+              }
+            }
+        } else {
+            echo 'Error executing the query.';
+        }
+        ?>
         </div>
-
-        <div class="buttons-newoffers" style="padding: 30px 0px;">
-            <div class="row">
-                <div class="col-md-6">
-                  <a href="#/"><button type="button" data-toggle="modal" data-target="#myModal">Counter Offer</button></a>
-                </div>
-                <div class="col-md-6">
-                    <a class="ignore1" href="#"><button>Ignore</button></a>
-                </div>
-            </div>
-
-          </div>
-
-
-         
-
-</div>
-
-<!-- THIRD NEW OFFER -->
-<div class="first-offer" style="margin-top: 20px;">
-    <div class="profileheadsection">
-    <div class="row">
-        <div class="col-md-3">
-            <div class="offerprofile-name">
-                <img src="./images/profileman.png"/>
-                <h3>David Johnson<br><b>User ID # 4ISK4DH</b></h3>
-            </div>
-        </div>
-        <div class="col-md-3 d-flex align-items-center">
-            <h3 class="address"><img src="./images/mappin.png"/> San Francisco, 5th Avenue 22nd Street,
-                House No- B-242</h3>
-        </div>
-        <div class="col-md-3 d-flex align-items-center">
-            <h6 style="color: #4492BE;"><img src="./images/scheduled.png"/> 21, August,4:00 AM, SUN</h6>
-        </div>
-        <div class="col-md-3 d-flex align-items-center">
-            <h4 style="color: #70BE44;">Offered On 22,August,2022</h4>
-        </div>
-    </div>
-</div>
-
-<div class="service-selectedsection">
-    <div class="row">
-        <div class="col-md-6">
-            <div class="order-details-progress">
-                <h2>Order details</h2>
-                <ul class="orderdetails-lists">
-                  <li><em>Lawn mowing</em><span style="color: #70BE44;">$ 100.00</span></li>
-                  <li><em>Snow Removal</em><span style="color: #70BE44;">$ 100.00</span></li>
-                  <li><em>Grass Cutting</em><span style="color: #70BE44;">$ 100.00</span></li>
-                  <li class="total-amount"><em><b>Total  amount paid</b></em><span style="color: #70BE44;"><b>$ 300.00</b></span></li>
-                </ul>
-              </div>
-        </div>
-        <div class="col-md-6">
-            <h6>Task Description</h6>
-            <p>I'm Stuck at Norway highway near Crown valley street, I 
-                have to wash & tint my car as soon as possible because 
-                of this extreme sunny weather. kindly come fast ASAP 
-                I'm waiting for your service. </p>
-        </div>
-    </div>
-</div>
-
-<div class="location-images-section">
-    <h2>Location Images </h2>
-    <div class="row">
-        <div class="col-md-6">
-            <div class="location-images">
-
-                <ul class="gallery-images">
-                  <li>
-                    <img src="./images/feature.png"/>
-                  </li>
-                  <li>
-                    <img src="./images/feature.png"/>
-                  </li>
-                  <li>
-                    <img src="./images/feature.png"/>
-                  </li>
-                  <li>
-                    <img src="./images/feature.png"/>
-                  </li>
-                  <li>
-                    <img src="./images/feature.png"/>
-                  </li>
-                  <li>
-                    <img src="./images/feature.png"/>
-                  </li>
-                  <li>
-                    <img src="./images/feature.png"/>
-                  </li>
-                  <li>
-                    <img src="./images/feature.png"/>
-                  </li>
-
-                </ul>
-              </div>
-        </div>
-        <div class="col-md-6">
-            
-        </div>
-    </div>
-</div>
-
-<div class="buttons-newoffers" style="padding: 30px 0px;">
-    <div class="row">
-        <div class="col-md-6">
-          <a href="#/"><button type="button" data-toggle="modal" data-target="#myModal">Counter Offer</button></a>
-        </div>
-        <div class="col-md-6">
-            <a class="ignore1" href="#"><button>Ignore</button></a>
-        </div>
-    </div>
-
-  </div>
-
-
- 
-
-</div>
-
-</div>
             <!-- END ROW MAIN-PANEL -->
         </div>
       <!-- main-panel ends -->
@@ -582,6 +496,26 @@
   <!-- container-scroller -->
 
   <!-- plugins:js -->
+  <script>
+function acceptOffer(proposalId) {
+    // Send an AJAX request to update the status to "scheduled_offer"
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'update_status.php'); // Create a PHP file to handle status updates
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(JSON.stringify({ proposalId: proposalId, status: 'scheduled_offer' }));
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            // Handle the server's response here, if needed
+            console.log(xhr.responseText);
+            
+            // Reload the page after the status is updated
+            location.reload(); // This will refresh the current page
+        }
+    };
+}
+
+</script>
   <script src="vendors/js/vendor.bundle.base.js"></script>
   <!-- endinject -->
   <!-- Plugin js for this page -->

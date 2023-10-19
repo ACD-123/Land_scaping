@@ -1,3 +1,51 @@
+<?php
+// Function to get customer information from the provider_registration table
+function getCustomerInfo($customerId) {
+  global $conn;
+  $sql = "SELECT fullname, address FROM provider_registration WHERE id = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param('s', $customerId);
+  if ($stmt->execute()) {
+      $result = $stmt->get_result();
+      if ($result->num_rows > 0) {
+          $row = $result->fetch_assoc();
+          return $row;
+      }
+  }
+  return array('fullname' => 'N/A', 'address' => 'N/A'); // Provide default values if customer info not found
+}
+// Function to get the price of a service from the categories table
+function getServicePrice($service) {
+  global $conn;
+  $sql = "SELECT price FROM categories WHERE heading = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param('s', $service);
+  if ($stmt->execute()) {
+      $result = $stmt->get_result();
+      if ($result->num_rows > 0) {
+          $row = $result->fetch_assoc();
+          return $row['price'];
+      }
+  }
+  return 'N/A'; // Provide a default value if service price not found
+}
+function getCustomerImagesForProvider($customerId, $providerId) {
+  global $conn;
+  $sql = "SELECT image_path FROM customer_images WHERE customer_id = ? AND provider_id = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param('ss', $customerId, $providerId);
+  if ($stmt->execute()) {
+    $result = $stmt->get_result();
+    $images = array();
+    while ($row = $result->fetch_assoc()) {
+      $images[] = $row['image_path'];
+    }
+    return $images;
+  }
+  return array();
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -223,34 +271,125 @@
             <h1><b style="color: #70BE44;">Order</b> Scheduled</h1>
             <div class="onetime-advancebokingbutton">
               <ul>
-                <li><a href="#"><button style="color: #fff; background-color: #70BE44;">One Time Service</button></a></li>
-                <li><a href="#"><button style="color: #959595; background-color: #E6E6E6;">Advance Bookings</button></a></li>
+                <li><a href="schedule-order.php"><button style="color: #fff; background-color: #70BE44;">One Time Service</button></a></li>
+                <li><a href="schedule-orders-advancebooking.php"><button style="color: #959595; background-color: #E6E6E6;">Advance Bookings</button></a></li>
               </ul>
             </div>
+            <?php
+              include 'connection.php';
+
+              $userId = $_SESSION['user_id'];
+
+              $sql = "SELECT * FROM customer_proposal WHERE provider_id = ? AND status = 'scheduled_offer'";
+              $stmt = $conn->prepare($sql);
+              $stmt->bind_param('s', $userId);
+
+              if ($stmt->execute()) {
+                  $result = $stmt->get_result();
+                  if ($result->num_rows == 0) {
+                    // No orders found for the provider
+                    echo '<h2 class="text-center texter">Sheduled orders not available.</h2>';
+                } else {
+            while ($row = $result->fetch_assoc()) {
+                $proposalId = $row['id'];
+                $customerId = $row['customer_id'];
+                $providerId = $row['provider_id'];
+                $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+                $selectedTime = $row['selected_time'];
+                $userContent = $row['user_content'];
+                $selectedServices = explode(', ', $row['selected_services']);
+                $totalAmount = $row['total_amount'];
+
+                // Retrieve customer name and address based on customerId
+                $customerInfo = getCustomerInfo($customerId);
+                $customerImages = getCustomerImagesForProvider($customerId, $userId);
+
+                // $customerImages = getCustomerImages($customerId);
+
+                // Output the retrieved customer name and address
+                $customerName = $customerInfo['fullname'];
+                $customerAddress = $customerInfo['address'];
+                // $image_path = $customerImages['image_path'];
+            ?>
+             <div class="modal fade" id="confirmationModal" role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="confirmationModalLabel">Confirm Acceptance</h5>
+                                <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button> -->
+                            </div>
+                            <div class="modal-body h-auto">
+                                <h2 class="pb-4">Are you sure?</h2>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="acceptOffer(<?php echo $proposalId; ?>)">Accept</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             <!-- FIRST PROGRESS PROFILE -->
             <div class="progress-profile">
               <div class="row">
                 <div class="col-md-9">
                   <div class="progress-profile-detail">
                     <ul class="paid">
-                      <li class="profile-name"><h5><img src="./images/homee.png"/><b>Danny </b><br>userID#321</h5></li>
-                      <li><h5><img src="./images/mappin.png"/> San Francisco, 5th Avenue 22nd <br>Street,
-                        House No- B-242</h5></li>
-                        <li class="paid-text" style="color:#F15A24;"><h5><img src="./images/schedule.png"/> 21, August,4:00 AM, SUN</h5></li>
+                      <li class="profile-name"><h5><img src="./images/homee.png"/><b><?php echo $customerName?>  </b><br>userID# <?php echo $customerId?></h5></li>
+                      <li><h5><img src="./images/mappin.png"/><?php echo $customerAddress?></h5></li>
+                        <li class="paid-text" style="color:#4492BE;">
+                        <?php
+                          $today = new DateTime(); // Get the current date
+                          $selectedDateObj = new DateTime($selectedDate);
+
+                          // Calculate the difference in days
+                          $daysRemaining = $today->diff($selectedDateObj)->days;
+
+                          // Determine the CSS class based on the condition
+                          $dateClass = '';
+                          $imageSrc = '';
+                          $showStartButton = false;
+                          $showSheduledButton = '';
+                          if ($daysRemaining === 0) {
+                              $dateClass = 'today-date';
+                              $imageSrc = './images/scheduled.png'; // Change to your desired image path
+                              $showStartButton = 'Scheduled'; 
+                          } elseif ($daysRemaining === 1) {
+                              $dateClass = 'last-day-date';
+                              $imageSrc = './images/schedule.png'; // Change to your desired image path
+                              $showStartButton = true; // Set to true to show the button
+                              $showSheduledButton = 'Scheduled Today'; 
+                          } else {
+                              $dateClass = 'other-date';
+                              $imageSrc = './images/scheduled.png'; // Change to your desired image path
+                              $showSheduledButton = 'Scheduled'; 
+                          }
+
+                          // Output the date with the appropriate CSS class
+                        ?>
+                        <h5 class="<?php echo $dateClass; ?>">
+                              <img src="<?php echo $imageSrc; ?>"/> <?php echo $selectedDate?> <br><?php echo $selectedTime?>
+                        </h5>
+
+
+                        <!-- <h5><img src="./images/schedule.png"/> <?php echo $selectedDate?> <br><?php echo $selectedTime?></h5> -->
+                      </li>
                     </ul>
                   </div>
 
                   <div class="services-needed">
                     <ul>
                       <li><h4>Services Needed</h4></li>
-                      <li>Snow removal <img src="./images/check.png"/></li>
-                      <li>Grass Cutting <img src="./images/check.png"/></li>
-                      <li class="number">2</li>
+                      <?php foreach ($selectedServices as $service) { ?>
+                            <li><?php echo $service; ?> <img src="./images/check.png"/></li>
+                        <?php } ?>
+                        <li class="number"><?php echo count($selectedServices); ?></li>
                     </ul>
                   </div>
 
                   <div class="progress-notify">
-                    <h2>Hey! I want to remove all the snow from my garden and want a full service garden mainteniance.</h2>
+                    <h2><?php echo $userContent?></h2>
                   </div>
                 </div>
                 <div class="col-md-3">
@@ -261,8 +400,12 @@
                   
                   <div class="service-status" style="width: 100%;">
                     <h3>Service Status</h3>
-                    <a class="schedulebutton" href="#"><button>Scheduled Today</button></a><br>
-                    <a class="startorder" href="#"><button>Start Order Progress</button></a>
+                    <a class="schedulebutton" href="#"><button><?php echo $showSheduledButton ?></button></a><br>
+                    <?php
+                    if ($showStartButton) {
+                        echo '<a class="startorder" href="javascript:void(0);"><button type="button" data-toggle="modal" data-target="#confirmationModal" data-proposal-id="<?php echo $proposalId; ?>">Start Order Progress</button></a>';
+                    }
+                    ?>
                   </div>
                 </div>
 
@@ -275,31 +418,15 @@
                             <div class="location-images">
                             <h5>Location Images </h5>
                             <ul class="gallery-images">
-                              <li>
-                                <img src="./images/feature.png"/>
-                              </li>
-                              <li>
-                                <img src="./images/feature.png"/>
-                              </li>
-                              <li>
-                                <img src="./images/feature.png"/>
-                              </li>
-                              <li>
-                                <img src="./images/feature.png"/>
-                              </li>
-                              <li>
-                                <img src="./images/feature.png"/>
-                              </li>
-                              <li>
-                                <img src="./images/feature.png"/>
-                              </li>
-                              <li>
-                                <img src="./images/feature.png"/>
-                              </li>
-                              <li>
-                                <img src="./images/feature.png"/>
-                              </li>
-
+                            <?php
+                            foreach (array_slice($customerImages, 0, 5) as $imagePath) {
+                            ?>
+                                <li>
+                                    <img src="../customer/<?php echo $imagePath; ?>" alt="Customer Image" />
+                                </li>
+                            <?php
+                            }
+                            ?>
                             </ul>
                           </div>
                           </div>
@@ -307,10 +434,15 @@
                             <div class="order-details-progress">
                               <h2>Order details</h2>
                               <ul class="orderdetails-lists">
-                                <li><em>Lawn mowing</em><span style="color: #70BE44;">$ 100.00</span></li>
-                                <li><em>Snow Removal</em><span style="color: #70BE44;">$ 100.00</span></li>
-                                <li><em>Grass Cutting</em><span style="color: #70BE44;">$ 100.00</span></li>
-                                <li class="total-amount"><em><b>Total  amount paid</b></em><span style="color: #70BE44;"><b>$ 300.00</b></span></li>
+                              <?php
+                                // Iterate through selected services
+                                foreach ($selectedServices as $service) {
+                                    // Retrieve the price of the service from the categories table
+                                    $servicePrice = getServicePrice($service);
+                                    ?>
+                                    <li><em><?php echo $service; ?></em><span style="color: #70BE44;">$ <?php echo $servicePrice; ?></span></li>
+                                <?php } ?>
+                                <li class="total-amount"><em><b>Total  amount paid</b></em><span style="color: #70BE44;"><b>$ <?php echo $totalAmount?></b></span></li>
                               </ul>
                             </div>
                           </div>
@@ -319,190 +451,13 @@
                   </div>
               </div>
             </div>
-            <!-- SECOND ORDER PROGRESS -->
-            <div class="progress-profile">
-                <div class="row">
-                  <div class="col-md-9">
-                    <div class="progress-profile-detail">
-                      <ul class="paid">
-                        <li class="profile-name"><h5><img src="./images/homee.png"/><b>Danny </b><br>userID#321</h5></li>
-                        <li><h5><img src="./images/mappin.png"/> San Francisco, 5th Avenue 22nd <br>Street,
-                          House No- B-242</h5></li>
-                          <li class="paid-text" style="color:#4492BE;"><h5><img src="./images/scheduled.png"/> 21, August,4:00 AM, SUN</h5></li>
-                      </ul>
-                    </div>
-  
-                    <div class="services-needed">
-                      <ul>
-                        <li><h4>Services Needed</h4></li>
-                        <li>Snow removal <img src="./images/check.png"/></li>
-                        <li>Grass Cutting <img src="./images/check.png"/></li>
-                        <li class="number">2</li>
-                      </ul>
-                    </div>
-  
-                    <div class="progress-notify">
-                      <h2>Hey! I want to remove all the snow from my garden and want a full service garden mainteniance.</h2>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="verification" style="width: 100%;">
-                      <h3>Order Amount </h3>
-                      <a href="#"><button>Paid</button></a>
-                    </div>
-                    
-                    <div class="service-status" style="width: 100%;">
-                      <h3>Service Status</h3>
-                      <a class="schedulebutton" href="#"><button>Scheduled</button></a><br>
-                  
-                    </div>
-                  </div>
-  
-                  
-                  <div class="viewgallery">
-                      <a href="#/" class="viewbuttn">View More <img src="./images/dropdown.png"/></a>
-                      <div class="progress-gallery">
-                          <div class="row">
-                            <div class="col-md-5">
-                              <div class="location-images">
-                              <h5>Location Images </h5>
-                              <ul class="gallery-images">
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-  
-                              </ul>
-                            </div>
-                            </div>
-                            <div class="col-md-7">
-                              <div class="order-details-progress">
-                                <h2>Order details</h2>
-                                <ul class="orderdetails-lists">
-                                  <li><em>Lawn mowing</em><span style="color: #70BE44;">$ 100.00</span></li>
-                                  <li><em>Snow Removal</em><span style="color: #70BE44;">$ 100.00</span></li>
-                                  <li><em>Grass Cutting</em><span style="color: #70BE44;">$ 100.00</span></li>
-                                  <li class="total-amount"><em><b>Total  amount paid</b></em><span style="color: #70BE44;"><b>$ 300.00</b></span></li>
-                                </ul>
-                              </div>
-                            </div>
-                          </div>
-                      </div>
-                    </div>
-                </div>
-              </div>
-            <!-- THIRD ORDER PROGRESS -->
-            <div class="progress-profile">
-                <div class="row">
-                  <div class="col-md-9">
-                    <div class="progress-profile-detail">
-                      <ul class="paid">
-                        <li class="profile-name"><h5><img src="./images/homee.png"/><b>Danny </b><br>userID#321</h5></li>
-                        <li><h5><img src="./images/mappin.png"/> San Francisco, 5th Avenue 22nd <br>Street,
-                          House No- B-242</h5></li>
-                          <li class="paid-text" style="color:#F15A24;"><h5><img src="./images/schedule.png"/> 21, August,4:00 AM, SUN</h5></li>
-                      </ul>
-                    </div>
-  
-                    <div class="services-needed">
-                      <ul>
-                        <li><h4>Services Needed</h4></li>
-                        <li>Snow removal <img src="./images/check.png"/></li>
-                        <li>Grass Cutting <img src="./images/check.png"/></li>
-                        <li class="number">2</li>
-                      </ul>
-                    </div>
-  
-                    <div class="progress-notify">
-                      <h2>Hey! I want to remove all the snow from my garden and want a full service garden mainteniance.</h2>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="verification" style="width: 100%;">
-                      <h3>Order Amount </h3>
-                      <a href="#"><button>Paid</button></a>
-                    </div>
-                    
-                    <div class="service-status" style="width: 100%;">
-                      <h3>Service Status</h3>
-                      <a class="schedulebutton" href="#"><button>Scheduled Today</button></a><br>
-                      <a class="startorder" href="#"><button>Start Order Progress</button></a>
-                    </div>
-                  </div>
-  
-                  
-                  <div class="viewgallery">
-                      <a href="#/" class="viewbuttn">View More <img src="./images/dropdown.png"/></a>
-                      <div class="progress-gallery">
-                          <div class="row">
-                            <div class="col-md-5">
-                              <div class="location-images">
-                              <h5>Location Images </h5>
-                              <ul class="gallery-images">
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-                                <li>
-                                  <img src="./images/feature.png"/>
-                                </li>
-  
-                              </ul>
-                            </div>
-                            </div>
-                            <div class="col-md-7">
-                              <div class="order-details-progress">
-                                <h2>Order details</h2>
-                                <ul class="orderdetails-lists">
-                                  <li><em>Lawn mowing</em><span style="color: #70BE44;">$ 100.00</span></li>
-                                  <li><em>Snow Removal</em><span style="color: #70BE44;">$ 100.00</span></li>
-                                  <li><em>Grass Cutting</em><span style="color: #70BE44;">$ 100.00</span></li>
-                                  <li class="total-amount"><em><b>Total  amount paid</b></em><span style="color: #70BE44;"><b>$ 300.00</b></span></li>
-                                </ul>
-                              </div>
-                            </div>
-                          </div>
-                      </div>
-                    </div>
-                </div>
-              </div>
+            <?php
+     }
+    }
+} else {
+    echo 'Error executing the query.';
+}
+?>
           </div>
 
 
@@ -516,7 +471,26 @@
     <!-- page-body-wrapper ends -->
   </div>
   <!-- container-scroller -->
+  <script>
+function acceptOffer(proposalId) {
+    // Send an AJAX request to update the status to "scheduled_offer"
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'update_status.php'); // Create a PHP file to handle status updates
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(JSON.stringify({ proposalId: proposalId, status: 'order_in_progress' }));
 
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            // Handle the server's response here, if needed
+            console.log(xhr.responseText);
+            
+            // Reload the page after the status is updated
+            location.reload(); // This will refresh the current page
+        }
+    };
+}
+
+</script>
   <!-- plugins:js -->
   <script src="vendors/js/vendor.bundle.base.js"></script>
   <!-- endinject -->

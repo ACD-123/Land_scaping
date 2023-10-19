@@ -59,7 +59,7 @@ function getProviderDetails($conn, $provider_id)
     }
 }
 
-$provider_img = "";
+$provider_name = "";
 $country = "";
 $city = "";
 $address = "";
@@ -92,7 +92,7 @@ if (isset($_GET['id'])) {
     $providerDetails = getProviderDetails($conn, $provider_id);
 
     if ($providerDetails) {
-        $provider_img = $providerDetails['fullname'];
+        $provider_name = $providerDetails['fullname'];
         $country = $providerDetails['country'];
         $city = $providerDetails['city'];
         $address = $providerDetails['address'];
@@ -208,7 +208,7 @@ $serviceData = getServicePricesAndImages($conn, $servicesArray);
         <div class="col-lg-12 col-md-12">
           <div class="card px-0 pt-4 pb-0 mt-3 mb-3">
 
-            <form method="post" action="" id="msform">
+            <form method="post" action="" id="msform" enctype="multipart/form-data">
               <!-- progressbar -->
               <ul id="progressbar">
                 <li class="active" id="account"><strong>Provider Selected</strong></li>
@@ -228,7 +228,7 @@ $serviceData = getServicePricesAndImages($conn, $servicesArray);
                       <div class="provider-name">
                         <img src="../provider/<?php echo $profile_picture ?>" />
                         <h4>
-                          <?php echo $provider_img; ?>
+                          <?php echo $provider_name; ?>
                         </h4>
                       </div>
                     </div>
@@ -439,11 +439,11 @@ foreach ($workingImages as $imagePath) {
                     <h2>Upload Images of your Place</h2>
                     <label style="background-image: url(./images/providerselected/upload.PNG);">
                     <input type="file" class="form-control" id="images" name="images[]" onchange="preview_images();" multiple accept="image/*" />
-</label>
-                    <p style="text-align: left;">Minimum 5 images of Of your service area , make sure image should be
-                      clear</p>
+                    </label>
+                    <p style="text-align: left;">
+                    Minimum 5 images of Of your service area , make sure image should beclear
+                  </p>
                       <div class="row" id="image_preview"></div>
-
                   </div>
                   <!-- <div class="gallery-section-service" style="padding: 40px 0px 30px 0px;">
                   <h2>Your Past work Images</h2>
@@ -484,6 +484,7 @@ foreach ($workingImages as $imagePath) {
                   <div id='main'>
                     <h3>Choose Your Time & Date</h3>
                     <input type="hidden" value="<?php echo $userId?>" id="customer-id" placeholder="Enter Customer ID">
+                    <input type="hidden" value="<?php echo $provider_id?>" id="provider-id" placeholder="Enter Provider ID">
                     <div id='app'></div>
                   </div>
                   <div id="content-on" style="display: none;width:100%">
@@ -854,10 +855,12 @@ foreach ($workingImages as $imagePath) {
                           </div>
                           <ul class="order-details-minor" style="width: 100%;">
                             <h4>Booking Timing</h4>
-                            <li><i style="color: #70BE44;" class="fa fa-clock" aria-hidden="true"></i>
-                              21, August,4:00 AM, SUN </li>
-                              
-                          </ul>
+                            <li>
+                                <i style="color: #70BE44;" class="fa fa-clock" aria-hidden="true"></i>
+                                <span id="selected-booking-time"></span>
+                            </li>
+                        </ul>
+
                           <div class="pricedetails1">
                             <h4>Services Selected</h4>
                             <ul id="selected-services-list2">
@@ -975,6 +978,84 @@ foreach ($workingImages as $imagePath) {
   </footer>
 
   <!-- footer end -->
+<script>
+    // Get all the time slot elements
+    const timeSlots = document.querySelectorAll('#custom-timeslot li');
+    const timeSlotMinutes = document.querySelectorAll('#custom-timeslot1 li');
+    const amPmElements = document.querySelectorAll('#custom-timeslot2 li');
+
+    // Initialize selected time variables
+    let selectedHour = '01'; // Default selected hour
+    let selectedMinute = '00'; // Default selected minute
+    let selectedAmPm = 'AM'; // Default selected AM/PM
+
+    // Function to update the selected time
+    function updateSelectedTime() {
+        // Find the selected hour and minute
+        timeSlots.forEach((slot, index) => {
+            if (slot.classList.contains('selected')) {
+                selectedHour = ('0' + (index + 1)).slice(-2); // Format to two digits
+            }
+        });
+
+        timeSlotMinutes.forEach((minuteSlot, index) => {
+            if (minuteSlot.classList.contains('selected')) {
+                selectedMinute = ('0' + index).slice(-2); // Format to two digits
+            }
+        });
+
+        // Find the selected AM/PM
+        amPmElements.forEach((element) => {
+            if (element.classList.contains('selected')) {
+                selectedAmPm = element.textContent;
+            }
+        });
+
+        // Update the <span> with the selected time
+        const selectedTimeElement = document.getElementById('selected-booking-time');
+        selectedTimeElement.textContent = `${selectedHour}:${selectedMinute} ${selectedAmPm}`;
+    }
+
+      // Add event listeners to time slots for click events
+      timeSlots.forEach((slot) => {
+          slot.addEventListener('click', () => {
+              // Toggle the 'selected' class on click
+              timeSlots.forEach((s) => s.classList.remove('selected'));
+              slot.classList.add('selected');
+
+              // Update the selected time
+              updateSelectedTime();
+          });
+      });
+
+      // Add event listeners to time slot minutes for click events
+      timeSlotMinutes.forEach((minuteSlot) => {
+          minuteSlot.addEventListener('click', () => {
+              // Toggle the 'selected' class on click
+              timeSlotMinutes.forEach((s) => s.classList.remove('selected'));
+              minuteSlot.classList.add('selected');
+
+              // Update the selected time
+              updateSelectedTime();
+          });
+      });
+
+      // Add event listeners to AM/PM elements for click events
+      amPmElements.forEach((element) => {
+          element.addEventListener('click', () => {
+              // Toggle the 'selected' class on click
+              amPmElements.forEach((el) => el.classList.remove('selected'));
+              element.classList.add('selected');
+
+              // Update the selected time
+              updateSelectedTime();
+          });
+      });
+
+      // Initial update when the page loads
+      updateSelectedTime();
+
+  </script>
   <script>
   const toggleSwitch = document.getElementById("toggle-switch");
   const contentOn = document.getElementById("content-on");
@@ -991,33 +1072,6 @@ foreach ($workingImages as $imagePath) {
   });
 </script>
 <script>
-    function preview_images() {
-        var preview = document.getElementById("image_preview");
-        var files = document.getElementById("images").files;
-
-        if (files.length !== 5) {
-            alert("Please select exactly 5 images.");
-            return;
-        }
-
-        preview.innerHTML = ""; // Clear previous preview
-
-        for (var i = 0; i < files.length; i++) {
-            var file = files[i];
-            var reader = new FileReader();
-
-            reader.onload = function (e) {
-                var image = document.createElement("img");
-                image.src = e.target.result;
-                image.className = "preview-image";
-                preview.appendChild(image);
-            };
-
-            reader.readAsDataURL(file);
-        }
-    }
-</script>
-<script>
     // JavaScript
     document.getElementById('task-description').addEventListener('input', function () {
         // Get the input from the textarea
@@ -1026,6 +1080,64 @@ foreach ($workingImages as $imagePath) {
         // Display the input in the <p> element
         document.getElementById('display-task-description').textContent = userContent;
     });
+function preview_images() {
+    var preview = document.getElementById("image_preview");
+    var files = document.getElementById("images").files;
+
+    if (files.length !== 5) {
+        alert("Please select exactly 5 images.");
+        return;
+    }
+
+    preview.innerHTML = ""; // Clear previous preview
+
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        var reader = new FileReader();
+
+        reader.onload = function (e) {
+            var image = document.createElement("img");
+            image.src = e.target.result;
+            image.className = "preview-image";
+            preview.appendChild(image);
+
+            // Add the base64-encoded image data to the data array
+            data.images.push(e.target.result);
+        };
+
+        reader.readAsDataURL(file);
+    }
+}
+function uploadImages(customerId, providerId) {
+    const files = document.getElementById("images").files;
+
+    if (files.length !== 5) {
+        alert("Please select exactly 5 images.");
+        return;
+    }
+
+    const formData = new FormData();
+
+    for (let i = 0; i < files.length; i++) {
+        formData.append("images[]", files[i]);
+    }
+
+    // Include both customerId and providerId in the form data
+    formData.append("customerId", customerId);
+    formData.append("providerId", providerId);
+
+    // Send the image data to the server using a new AJAX request
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'add.php'); // Create a new PHP file to handle image uploads
+    xhr.send(formData);
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            // Handle the server's response here, if needed
+            console.log(xhr.responseText);
+        }
+    };
+}
 
     document.getElementById('submit-date').addEventListener('click', function () {
         // Find the selected date from the calendar
@@ -1040,6 +1152,7 @@ foreach ($workingImages as $imagePath) {
 
             // Get the customer ID from the input field
             const customerId = document.getElementById('customer-id').value;
+            const providerId = document.getElementById('provider-id').value;
 
             // Get the task description from the <p> element
             const userContent = document.getElementById('display-task-description').textContent;
@@ -1047,10 +1160,12 @@ foreach ($workingImages as $imagePath) {
             // Get the selected services and total amount
             const selectedServices = getSelectedServices();
             const totalAmount = calculateTotalAmount();
+            const images = preview_images();
 
             // Create a JavaScript object with all the data
             const data = {
                 customerId: customerId,
+                providerId: providerId,
                 selectedDate: {
                     year: dateYear,
                     month: dateMonth,
@@ -1060,6 +1175,7 @@ foreach ($workingImages as $imagePath) {
                 userContent: userContent,
                 selectedServices: selectedServices,
                 totalAmount: totalAmount,
+                images: [], // Add an empty array to store base64-encoded image data
             };
 
             // Send the data to the server using AJAX
@@ -1074,10 +1190,13 @@ foreach ($workingImages as $imagePath) {
                     console.log(xhr.responseText);
                 }
             };
+            // After sending non-image data, upload images separately
+    uploadImages(customerId, providerId);
         } else {
             alert('Please select a date from the calendar.');
         }
     });
+ 
 
     // Implement a function to get the selected time from your time selection elements
     function getSelectedTime() {
@@ -1121,6 +1240,8 @@ foreach ($workingImages as $imagePath) {
 
         return totalAmount.toFixed(2);
     }
+    // After preview_images() is called, you can add the base64-encoded images to the data array
+
 </script>
 
   

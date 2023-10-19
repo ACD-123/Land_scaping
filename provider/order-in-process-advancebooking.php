@@ -220,8 +220,8 @@
             <h1><b style="color: #70BE44;">Order</b> In Progress</h1>
             <div class="onetime-advancebokingbutton">
                 <ul>
-                  <li><a href="#"><button style="color: #959595; background-color: #E6E6E6;">One Time Service</button></a></li>
-                  <li><a href="#"><button style="color: #fff; background-color: #70BE44;">Advance Bookings</button></a></li>
+                  <li><a href="order-in-progress.php"><button style="color: #959595; background-color: #E6E6E6;">One Time Service</button></a></li>
+                  <li><a href="order-in-process-advancebooking.php"><button style="color: #fff; background-color: #70BE44;">Advance Bookings</button></a></li>
                 </ul>
               </div>
         <div class="inprogressadvancebooking-box">

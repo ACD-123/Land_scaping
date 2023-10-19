@@ -323,9 +323,9 @@
           <div class="order-in-progress">
             <h1><b style="color: #70BE44;">New </b>Offers</h1>
             <div class="onetime-advancebokingbutton">
-              <ul>
-                <li><a href="#"><button style="color: #959595; background-color: #E6E6E6;">One Time Service</button></a></li>
-                <li><a href="#"><button style="color: #fff; background-color: #70BE44;">Advance Bookings</button></a></li>
+            <ul>
+                <li><a href="new-offers.php"><button style="color: #fff; background-color: #70BE44;">One Time Service</button></a></li>
+                <li><a href="new-offers-advancebooking.php"><button style="color: #959595; background-color: #E6E6E6;">Advance Bookings</button></a></li>
               </ul>
             </div>
             <!-- FIRST NEW OFFER -->

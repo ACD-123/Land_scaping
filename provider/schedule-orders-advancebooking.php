@@ -219,10 +219,10 @@
         <div class="order-in-progress">
             <h1><b style="color: #70BE44;">Scheduled</b> Order</h1>
             <div class="onetime-advancebokingbutton">
-                <ul>
-                  <li><a href="#"><button style="color: #959595; background-color: #E6E6E6;">One Time Service</button></a></li>
-                  <li><a href="#"><button style="color: #fff; background-color: #70BE44;">Advance Bookings</button></a></li>
-                </ul>
+            <ul>
+                <li><a href="schedule-order.php"><button style="color: #fff; background-color: #70BE44;">One Time Service</button></a></li>
+                <li><a href="schedule-orders-advancebooking.php"><button style="color: #959595; background-color: #E6E6E6;">Advance Bookings</button></a></li>
+              </ul>
               </div>
         <div class="inprogressadvancebooking-box">
             <div class="row align-items-center">
