@@ -140,7 +140,7 @@ include 'Header.php';
                 ?>
                 <div class="col-lg-4 mb-4 mb-lg-0">
                     <div class="offer-inner-box" style="text-align: center;">
-                        <img style="object-fit: cover; width: 40%;" src="http://localhost/aron_burks/admin/uploads/<?php echo $image; ?>">
+                        <img style="object-fit: cover; width: 40%;" src="./admin/uploads/<?php echo $image; ?>">
                         <h4><?php echo $heading; ?></h4>
                         <p><?php echo $content; ?></p>
                         <a href='#'><button>Explore More</button></a>
@@ -222,7 +222,7 @@ if ($result->num_rows > 0) {
 
         // Wrap the provider card with a link to provider.php
         echo '<div class="col-lg-4 mb-4 mb-lg-0">';
-        echo '<a href="provider.php?id=' . $provider_id . '">';
+        echo '<a href="./provider/registeration.php">';
         echo '<div class="provider-card">';
         echo '<div style="width:100%; height:200px;">';
         echo '<img style="object-fit:contain; width:100%; height:100%" src="./provider/' . $profile_picture . '" width="100%"/>';

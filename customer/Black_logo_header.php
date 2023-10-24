@@ -1,5 +1,4 @@
 <?php
-session_start();
 include 'connection.php'
 ?>
 
@@ -46,7 +45,7 @@ include 'connection.php'
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button"
                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <img src="http://localhost/aron_burks/customer/<?php echo $profileImage; ?>" alt="User Profile Picture" class="profile-picture">
+                                    <img src="./<?php echo $profileImage; ?>" alt="User Profile Picture" class="profile-picture">
                                 </a>
                                 <div class="dropdown-menu" aria-labelledby="profileDropdown">
                                 <a class="dropdown-item" href="profilesetting.php">Profile</a>

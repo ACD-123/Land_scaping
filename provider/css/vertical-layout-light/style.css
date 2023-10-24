@@ -14413,6 +14413,18 @@ fieldset:disabled .swal2-modal .swal2-buttonswrapper .swal2-styled,
   overflow-y: auto;
   outline: 0;
 }
+.new {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1055;
+  display: none;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  outline: 0;
+}
 
 .modal-dialog {
   position: relative;
@@ -14422,6 +14434,10 @@ fieldset:disabled .swal2-modal .swal2-buttonswrapper .swal2-styled,
 }
 
 .modal.fade .modal-dialog {
+  transition: transform 0.4s ease;
+  transform: translate(0, -50px);
+}
+.new.fade .modal-dialog {
   transition: transform 0.4s ease;
   transform: translate(0, -50px);
 }
@@ -32414,6 +32430,7 @@ ul.paid li.paid-text h5 {
   padding: 20px 20px;
 }
 .order-in-progress .first-offer {
+  margin-top: 20px;
   border: 1px solid #70BE44;
   border-radius: 20px;
   padding: 20px 40px;
@@ -32467,12 +32484,14 @@ ul.paid li.paid-text h5 {
   background: #fff;
   color: #ccc !important;
   font-size: 19px;
-  padding: 10px 30px;
+  /* padding: 10px 30px; */
 }
 .service-selectedsection .order-details-progress ul li {
   font-size: 12px;
   font-weight: 500;
   line-height: 22px;
+  display: flow-root;
+
   text-align: left;
 }
 .service-selectedsection .order-details-progress ul {
@@ -32560,6 +32579,10 @@ div#myModal {
   opacity: 1;
   background-color: #0000006b;
 }
+div#new {
+  opacity: 1;
+  background-color: #0000006b;
+}
 div#confirmationModal {
   opacity: 1;
   background-color: #0000006b;
@@ -32603,7 +32626,7 @@ div#confirmationModal {
   margin-bottom: 40px;
 }
 .last-day-date {
-  color: red; /* Change this color to your preference */
+  color: #f25c27; /* Change this color to your preference */
   font-weight: bold; /* You can add more styles if needed */
 }
 .progress-gallery ul li{

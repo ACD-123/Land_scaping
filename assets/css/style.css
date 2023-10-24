@@ -1245,6 +1245,8 @@ section#feature-provider p {
   color: #515151;
 }
 section#feature-provider .provider-card img {
+  object-fit: fill !important;
+
   border-radius: 20px 20px 0px 0px;
 }
 section#feature-provider .feature-info-box ul.featurelist li {

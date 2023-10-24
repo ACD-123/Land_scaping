@@ -1,4 +1,5 @@
 <?php
+session_start();
 include 'connection.php'; // Include your database connection script
 
 if ($conn->connect_error) {
@@ -11,6 +12,7 @@ $error_message = '';
 // Check if the form is submitted
 if (isset($_POST['update_profile'])) {
     // Retrieve user input from the form
+    $id = $_SESSION['user_id']; // Get the user's ID from the session
     $fullname = $_POST['fullname'];
     $email = $_POST['email'];
     $phone = $_POST['phone'];
@@ -19,36 +21,74 @@ if (isset($_POST['update_profile'])) {
     $region = $_POST['region'];
     $city = $_POST['city'];
     $zipcode = $_POST['zipcode'];
+// echo $_SESSION['user_id'];
+// die();
+     // Check if a new profile picture is uploaded
+     if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === 0) {
+      $profile_picture_filename = $_FILES['profile_picture']['name'];
+      $profile_picture_local_path = 'application_images/' . $profile_picture_filename;
 
-    // Check if a new profile picture is uploaded
-    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === 0) {
-        $profile_picture_filename = $_FILES['profile_picture']['name'];
-        $profile_picture_local_path = 'application_images/' . $profile_picture_filename;
+      // Move the uploaded profile picture to the destination folder
+      if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $profile_picture_local_path)) {
+          $profile_picture = $profile_picture_local_path;
+      } else {
+          $error_message = "Error uploading profile picture.";
+      }
+  }
 
-        // Move the uploaded profile picture to the destination folder
-        if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $profile_picture_local_path)) {
-            $profile_picture = $profile_picture_local_path;
-        } else {
-            $error_message = "Error uploading profile picture.";
-        }
+    // Build the base SQL query
+    $update_sql = "UPDATE provider_registration SET";
+
+    // Create an array to store the fields that the user wants to update
+    $update_fields = array();
+
+    // Check if each field is set in the form data and add it to the update_fields array
+    if (!empty($fullname)) {
+        $update_fields[] = "fullname='$fullname'";
     }
-
-    // Build the SQL query
-    $update_sql = "UPDATE provider_registration SET fullname='$fullname', email='$email', phone='$phone', address='$address', 
-                  country='$country', region='$region', city='$city', zipcode='$zipcode'";
-
+    if (!empty($phone)) {
+        $update_fields[] = "phone='$phone'";
+    }
+    if (!empty($address)) {
+        $update_fields[] = "address='$address'";
+    }
+    if (!empty($country)) {
+        $update_fields[] = "country='$country'";
+    }
+    if (!empty($region)) {
+        $update_fields[] = "region='$region'";
+    }
+    if (!empty($city)) {
+        $update_fields[] = "city='$city'";
+    }
+    if (!empty($zipcode)) {
+        $update_fields[] = "zipcode='$zipcode'";
+    }
+    if (!empty($email)) {
+        $update_fields[] = "email='$email'";
+    }
     // Add the profile_picture update only if a new image is uploaded
     if (!empty($profile_picture)) {
-        $update_sql .= ", profile_picture='$profile_picture'";
+        $update_fields[] = "profile_picture='$profile_picture'";
     }
 
-    $update_sql .= " WHERE email='$email'"; // Assuming email is a unique identifier
+    // Check if there are fields to update
+    if (!empty($update_fields)) {
+        // Combine the update fields into the SQL query
+        $update_sql .= ' ' . implode(', ', $update_fields);
 
-    // Execute the SQL query
-    if ($conn->query($update_sql) === TRUE) {
-        $error_message = "Profile updated successfully.";
+        // Add the WHERE clause to update the user based on their ID
+        $update_sql .= " WHERE id='$id'"; // Assuming 'id' is the primary key
+
+        // Execute the SQL query
+        if ($conn->query($update_sql) === TRUE) {
+            $error_message = "Profile updated successfully.";
+        } else {
+            $error_message = "Error updating profile: " . $conn->error;
+        }
     } else {
-        $error_message = "Error updating profile: " . $conn->error;
+        // No fields to update
+        $error_message = "No fields to update.";
     }
 }
 
@@ -327,7 +367,7 @@ $conn->close();
                                   ?>  
               <div class="small-12 medium-2 large-2 columns">
                   <div class="circle">
-                      <img class="profile-pic" src="http://localhost/aron_burks/provider/<?php echo $profileImage; ?>">
+                      <img class="profile-pic" src="./<?php echo $profileImage; ?>">
                   </div>
                   <div class="p-image">
                       <i class="menu-icon mdi mdi-pencil"></i>

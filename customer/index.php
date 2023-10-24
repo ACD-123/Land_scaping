@@ -1,3 +1,7 @@
+<?php
+session_start();
+
+?>
 <!DOCTYPE html>
 <html lang="zxx">
 
@@ -105,7 +109,7 @@ include 'Header.php'
                 <div class="col-lg-3 mb-3 mb-lg-0">
                   <a href="services.php">
                     <div class="services-inner-box" style="text-align: center;">
-                        <img style="object-fit: cover; width: 40%;" src="http://localhost/aron_burks/admin/uploads/<?php echo $image; ?>">
+                        <img style="object-fit: cover; width: 40%;" src="../admin/uploads/<?php echo $image; ?>">
                         <h3><?php echo $heading; ?></h3>
                         <h4>Avg. Project: $<?php echo $price; ?></h4>
                         <!-- <a href='#'><button>Explore More</button></a> -->

@@ -1,5 +1,6 @@
 <?php
 include 'connection.php';
+session_start();
 
 // Initialize $servicesArray
 $servicesArray = array();
@@ -107,7 +108,7 @@ function getServicePricesAndImages($conn, $servicesArray)
     foreach ($servicesArray as $individualService) {
         $serviceName = mysqli_real_escape_string($conn, $individualService);
 
-        $sql = "SELECT price, image FROM categories WHERE heading = '$serviceName'";
+        $sql = "SELECT id, price, image FROM categories WHERE heading = '$serviceName'";
         $result = $conn->query($sql);
 
         if (!$result) {
@@ -117,6 +118,7 @@ function getServicePricesAndImages($conn, $servicesArray)
         $row = $result->fetch_assoc();
         $price = $row['price'];
         $imagePath = $row['image'];
+        $Serviceid = $row['id'];
 
         // If the price is 'N/A', set a default value
         if ($price === 'N/A') {
@@ -127,6 +129,7 @@ function getServicePricesAndImages($conn, $servicesArray)
         $data[$individualService] = [
             'price' => $price,
             'image' => $imagePath,
+            'id' => $Serviceid,
         ];
     }
 
@@ -134,6 +137,28 @@ function getServicePricesAndImages($conn, $servicesArray)
 }
 
 $serviceData = getServicePricesAndImages($conn, $servicesArray);
+
+// Function to get the service IDs for the given services
+function getServiceIds($conn, $servicesArray)
+{
+    $serviceIds = array();
+
+    foreach ($servicesArray as $individualService) {
+        $serviceName = mysqli_real_escape_string($conn, $individualService);
+
+        $sql = "SELECT id FROM categories WHERE heading = '$serviceName'";
+        $result = $conn->query($sql);
+
+        if ($result && $result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $serviceIds[$individualService] = $row['id'];
+        }
+    }
+
+    return $serviceIds;
+}
+
+$serviceIds = getServiceIds($conn, $servicesArray);
 
 // The code related to inserting data into the database has been commented out.
 ?>
@@ -272,9 +297,9 @@ $serviceData = getServicePricesAndImages($conn, $servicesArray);
                         <ul style="width: 100%;">
                           <?php
                           // $imageHtml = '';
-foreach ($workingImages as $imagePath) {
-    echo  "<li><a href='../provider/$imagePath'><img src='../provider/$imagePath' /></a></li>";
-}
+                              foreach ($workingImages as $imagePath) {
+                                  echo  "<li><a href='../provider/$imagePath'><img src='../provider/$imagePath' /></a></li>";
+                              }
                           ?>
                         </ul>
                       </div>
@@ -290,17 +315,16 @@ foreach ($workingImages as $imagePath) {
                         <!-- <div class="row"> -->
                         <ul style='width: 100%;'>
                           <div class="row">
-
-
                             <?php
-    foreach ($servicesArray as $individualService) {
-        $serviceInfo = $serviceData[$individualService];
-        $price = $serviceInfo['price'];
-        $imagePath = $serviceInfo['image'];
-
-        echo "<div class='col-lg-6'><li><img src='../admin/uploads/$imagePath' /> $individualService</li></div>";
-    }
-    ?>
+                              foreach ($servicesArray as $individualService) {
+                                  $serviceInfo = $serviceData[$individualService];
+                                  $price = $serviceInfo['price'];
+                                  $Serviceid = $serviceInfo['id'];
+                                  $imagePath = $serviceInfo['image'];
+                                  // $serviceId = isset($serviceIds[$individualService]) ? $serviceIds[$individualService] : 'N/A';
+                                  echo "<input type='text' id='service-id' data-id='' value='$Serviceid' /><div class='col-lg-6'><li><img src='../admin/uploads/$imagePath' /> $individualService</li></div>";
+                              }
+                            ?>
                           </div>
                         </ul>
 
@@ -399,40 +423,17 @@ foreach ($workingImages as $imagePath) {
                   <div class="select-service-booking">
                     <h4>Select Services you need</h4>
                     <div class="row">
-                      <?php
-                          foreach ($servicesArray as $individualService) {
-                              echo "<div class='col-lg-3 mb-3 mb-lg-0'>";
-                              echo "<label><input type='checkbox' name='selected_services[]' value='$individualService'>$individualService</label>";
-                              echo "</div>";
-                          }
-                          ?>
-                      <!-- <div class="col-lg-3 mb-3 mb-lg-0">
-                        <label><input type="checkbox" name="checkbox" value="value">Gardening</label>
-                      </div>
-                      <div class="col-lg-3 mb-3 mb-lg-0">
-                        <label><input type="checkbox" name="checkbox" value="value">Land Clearing</label>
-                      </div>
-                      <div class="col-lg-3 mb-3 mb-lg-0">
-                        <label><input type="checkbox" name="checkbox" value="value">Lawn Mowing</label>
-                      </div>
-                      <div class="col-lg-3 mb-3 mb-lg-0">
-                        <label><input type="checkbox" name="checkbox" value="value">Grass Trimming</label>
-                      </div> -->
+                    <?php
+foreach ($servicesArray as $individualService) {
+    $serviceInfo = $serviceData[$individualService];
+    $serviceId = $serviceInfo['id'];
+    echo "<div class='col-lg-3 mb-3 mb-lg-0'>";
+    echo "<label><input type='checkbox' name='selected_services[]' value='$individualService' data-service-id='$serviceId'>$serviceId $individualService</label>";
+    echo "</div>";
+}
+?>
+
                     </div>
-                    <!-- <div class="row">
-                      <div class="col-lg-3 mb-3 mb-lg-0">
-                        <label><input type="checkbox" name="checkbox" value="value">Tree Planting</label>
-                      </div>
-                      <div class="col-lg-3 mb-3 mb-lg-0">
-                        <label><input type="checkbox" name="checkbox" value="value">Weeding</label>
-                      </div>
-                      <div class="col-lg-3 mb-3 mb-lg-0">
-                        <label><input type="checkbox" name="checkbox" value="value">Snow removal</label>
-                      </div>
-                      <div class="col-lg-3 mb-3 mb-lg-0">
-                        <label><input type="checkbox" name="checkbox" value="value">Snow removal</label>
-                      </div>
-                    </div> -->
                   </div>
 
                   <div class="upload-field-booking">
@@ -445,17 +446,6 @@ foreach ($workingImages as $imagePath) {
                   </p>
                       <div class="row" id="image_preview"></div>
                   </div>
-                  <!-- <div class="gallery-section-service" style="padding: 40px 0px 30px 0px;">
-                  <h2>Your Past work Images</h2>
-                  <div class="container">
-                      <div class="row">
-                          <div class="my-2" style="background-image: url(./images/upload.PNG);">
-                              <input type="file" class="form-control" id="images" name="images[]" onchange="preview_images();" multiple accept="image/*" />
-                          </div>
-                      </div>
-                      <div class="row" id="image_preview"></div>
-                  </div>
-                </div> -->
 
                   <div class="advancebook-bookingtab">
                     <div class="col-lg-9 mb-9 mb-lg-0">
@@ -469,11 +459,6 @@ foreach ($workingImages as $imagePath) {
                             <div class="knobs"></div>
                             <div class="layer"></div>
                           </div>
-
-
-
-
-
                         </div>
                       </div>
                     </div>
@@ -824,24 +809,30 @@ foreach ($workingImages as $imagePath) {
               <fieldset>
                 <div class="your-offer-selected">
                   <div class="row">
-                    <div class="col-lg-6 mb-3 mb-lg-0">
+                  <div class="col-lg-6 mb-3 mb-lg-0">
                       <h2>Your offers for services selected</h2>
                       <div class="unorderlist-selected" id="selected-services-list">
-                        <?php
-                              foreach ($servicesArray as $individualService) {
-                                  $serviceInfo = $serviceData[$individualService];
-                                  $price = $serviceInfo['price'];
-                                  $imagePath = $serviceInfo['image'];
-                                  echo "<li><em><img src='../admin/uploads/$imagePath' />$individualService</em><span>$" . $price . "</span></li>";
-                              }
-                              ?>
+                          <?php
+                          foreach ($servicesArray as $individualService) {
+                            $serviceInfo = $serviceData[$individualService];
+                            $price = $serviceInfo['price'];
+                            $imagePath = $serviceInfo['image'];
+                            echo "<li>
+                              <em><img src='../admin/uploads/$imagePath' />$individualService</em>
+                              <span>$<em contenteditable='true' onBlur='updateTotalAmount(this)'>$price</em></span>
+                            </li>";
+                          }
+                          ?>
+                        </div>
+
+                        <div class="totalselected">
+                          <li>
+                            <em><img src="./images/providerselected/total.png" />Total Charges</em>
+                            <span id="total-amount">$0</span>
+                          </li>
+                        </div>
                       </div>
-                      <div class="totalselected">
-                        <li><em><img src="./images/providerselected/total.png" />Total Charges</em>
-                          <span id="total-amount">$0</span> <!-- Add an empty span for total amount -->
-                        </li>
-                      </div>
-                    </div>
+
 
                     <div class="col-lg-6 mb-3 mb-lg-0">
                       <div class="selected-prfle-detl">
@@ -864,14 +855,7 @@ foreach ($workingImages as $imagePath) {
                           <div class="pricedetails1">
                             <h4>Services Selected</h4>
                             <ul id="selected-services-list2">
-                              <?php
-                              foreach ($servicesArray as $individualService) {
-                                  $serviceInfo = $serviceData[$individualService];
-                                  $price = $serviceInfo['price'];
-                                  $imagePath = $serviceInfo['image'];
-                                  echo "<li><em>$individualService</em><span style='color: #70BE44;'>$" . $price . "</span></li>";
-                              }
-                              ?>
+                              
                             </ul>
                             <!-- <ul >
                               <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
@@ -978,6 +962,41 @@ foreach ($workingImages as $imagePath) {
   </footer>
 
   <!-- footer end -->
+ 
+<script>
+  const totalAmountElement = document.getElementById('total-amount');
+  const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+  const selectedServicesList2 = document.getElementById('selected-services-list2');
+
+  function updateTotalAmount() {
+    let totalAmount = 0;
+
+    // Clear the existing list
+    selectedServicesList2.innerHTML = '';
+
+    checkboxes.forEach((checkbox, index) => {
+      if (checkbox.checked) {
+        const priceElement = document.querySelectorAll('em[contenteditable="true"]')[index];
+        const price = parseFloat(priceElement.textContent) || 0;
+        totalAmount += price;
+
+        // Display the edited price in the selected services list
+        const serviceName = checkbox.value;
+        const listItem = document.createElement('li');
+        listItem.innerHTML = `<em>${serviceName}</em><span style='color: #70BE44;'>$<em>${price.toFixed(2)}</em></span>`;
+        selectedServicesList2.appendChild(listItem);
+      }
+    });
+
+    totalAmountElement.textContent = `$${totalAmount.toFixed(2)}`;
+  }
+
+  checkboxes.forEach((checkbox, index) => {
+    checkbox.addEventListener('change', function () {
+      updateTotalAmount();
+    });
+  });
+</script>
 <script>
     // Get all the time slot elements
     const timeSlots = document.querySelectorAll('#custom-timeslot li');
@@ -1072,15 +1091,15 @@ foreach ($workingImages as $imagePath) {
   });
 </script>
 <script>
-    // JavaScript
-    document.getElementById('task-description').addEventListener('input', function () {
+   // JavaScript
+   document.getElementById('task-description').addEventListener('input', function () {
         // Get the input from the textarea
         const userContent = this.value;
 
         // Display the input in the <p> element
         document.getElementById('display-task-description').textContent = userContent;
     });
-function preview_images() {
+  function preview_images() {
     var preview = document.getElementById("image_preview");
     var files = document.getElementById("images").files;
 
@@ -1107,8 +1126,8 @@ function preview_images() {
 
         reader.readAsDataURL(file);
     }
-}
-function uploadImages(customerId, providerId) {
+  }
+  function uploadImages(customerId, providerId) {
     const files = document.getElementById("images").files;
 
     if (files.length !== 5) {
@@ -1137,8 +1156,23 @@ function uploadImages(customerId, providerId) {
             console.log(xhr.responseText);
         }
     };
-}
+  }
+  function getSelectedServicesWithPrices() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const selectedServices = [];
 
+    checkboxes.forEach((checkbox, index) => {
+        if (checkbox.checked) {
+            const serviceId = checkbox.getAttribute('data-service-id');
+            const serviceName = checkbox.value;
+            const priceElement = document.querySelectorAll('em[contenteditable="true"]')[index];
+            const price = parseFloat(priceElement.textContent) || 0;
+            selectedServices.push({ serviceId, serviceName, price });
+        }
+    });
+
+    return selectedServices;
+}
     document.getElementById('submit-date').addEventListener('click', function () {
         // Find the selected date from the calendar
         const selectedDateElement = document.querySelector('.calendar-day.active');
@@ -1153,19 +1187,23 @@ function uploadImages(customerId, providerId) {
             // Get the customer ID from the input field
             const customerId = document.getElementById('customer-id').value;
             const providerId = document.getElementById('provider-id').value;
+            const serviceId = document.getElementById('service-id').value;
 
             // Get the task description from the <p> element
             const userContent = document.getElementById('display-task-description').textContent;
 
             // Get the selected services and total amount
             const selectedServices = getSelectedServices();
-            const totalAmount = calculateTotalAmount();
+            const serviceIds = selectedServices.map(service => service.serviceId); // Extract service IDs
+
+            const totalAmount = totalAmountElement.textContent.replace('$', '');
             const images = preview_images();
 
             // Create a JavaScript object with all the data
             const data = {
                 customerId: customerId,
                 providerId: providerId,
+                serviceId: serviceId, // Include the selected service's ID
                 selectedDate: {
                     year: dateYear,
                     month: dateMonth,
@@ -1173,11 +1211,12 @@ function uploadImages(customerId, providerId) {
                 },
                 selectedTime: selectedTime,
                 userContent: userContent,
-                selectedServices: selectedServices,
+                selectedServices: getSelectedServicesWithPrices(),// Add this line
                 totalAmount: totalAmount,
                 images: [], // Add an empty array to store base64-encoded image data
             };
-
+            // console.log('data', data);
+            // return;
             // Send the data to the server using AJAX
             const xhr = new XMLHttpRequest();
             xhr.open('POST', 'php.php'); // Replace with your PHP script URL
@@ -1213,17 +1252,20 @@ function uploadImages(customerId, providerId) {
 
     // Function to get the selected services
     function getSelectedServices() {
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-        const selectedServices = [];
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const selectedServices = [];
 
-        checkboxes.forEach((checkbox) => {
-            if (checkbox.checked) {
-                selectedServices.push(checkbox.value);
-            }
-        });
+    checkboxes.forEach((checkbox) => {
+        if (checkbox.checked) {
+            const serviceId = checkbox.getAttribute('data-service-id');
+            const serviceName = checkbox.value;
+            selectedServices.push({ serviceId, serviceName });
+        }
+    });
 
-        return selectedServices;
-    }
+    return selectedServices;
+}
+
 
     // Function to calculate the total amount based on selected services
     function calculateTotalAmount() {
@@ -1243,63 +1285,43 @@ function uploadImages(customerId, providerId) {
     // After preview_images() is called, you can add the base64-encoded images to the data array
 
 </script>
+<script>
+  const selectedServicesList = document.getElementById('selected-services-list');
+  const totalAmountElement = document.getElementById('total-amount');
+  const checkboxes = document.querySelectorAll('input[type="checkbox"]');
 
-  
-  <script>
-    // Get all the checkboxes
-    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-    // Get the selected services list element
-    const selectedServicesList = document.getElementById('selected-services-list');
-    const selectedServicesList2 = document.getElementById('selected-services-list2'); // New div's id
-    // Get the total amount elements
-    const totalAmountElement = document.getElementById('total-amount');
-    const totalAmountElement2 = document.getElementById('total-amount2'); // New span's id
+  function updateSelectedServices() {
+    selectedServicesList.innerHTML = ''; // Clear the selected services list
+    let totalAmount = 0;
 
-    // Function to update the selected services list and calculate the total amount
-    function updateSelectedServices() {
-        // Clear the selected services lists
-        selectedServicesList.innerHTML = '';
-        selectedServicesList2.innerHTML = '';
-
-        // Initialize the total amounts to 0
-        let totalAmount = 0;
-        let totalAmount2 = 0;
-
-        // Loop through checkboxes and display selected services
-        checkboxes.forEach((checkbox) => {
-            if (checkbox.checked) {
-                const individualService = checkbox.value;
-                const serviceInfo = <?php echo json_encode($serviceData); ?>; // Provided by PHP
-                const price = serviceInfo[individualService].price;
-                const imagePath = serviceInfo[individualService].image;
-
-                // Add selected service to both lists
-                selectedServicesList.innerHTML += `
-                    <li><em><img src='../admin/uploads/${imagePath}' />${individualService}</em><span>$${price}</span></li>
-                `;
-                selectedServicesList2.innerHTML += `
-                    <li><em>${individualService}</em><span style='color: #70BE44;'>$${price}</span></li>
-                `;
-
-                // Update the total amounts
-                totalAmount += parseFloat(price);
-                totalAmount2 += parseFloat(price);
-            }
-        });
-
-        // Display the total amounts
-        totalAmountElement.textContent = `$${totalAmount.toFixed(2)}`;
-        totalAmountElement2.textContent = `$${totalAmount2.toFixed(2)}`;
-    }
-
-    // Add change event listeners to all checkboxes
     checkboxes.forEach((checkbox) => {
-        checkbox.addEventListener('change', updateSelectedServices);
+      if (checkbox.checked) {
+        const serviceName = checkbox.value;
+        const price = parseFloat(checkbox.getAttribute('data-price')) || 0;
+
+        // Add selected service to the list
+        selectedServicesList.innerHTML += `
+          <li>
+            <em>${serviceName}</em>
+            <span>$<em contenteditable="true">${price}</em></span>
+          </li>
+        `;
+
+        totalAmount += price;
+      }
     });
 
-    // Initial update when the page loads
-    updateSelectedServices();
+    totalAmountElement.textContent = `$${totalAmount.toFixed(2)}`;
+  }
+
+  checkboxes.forEach((checkbox) => {
+    checkbox.addEventListener('change', updateSelectedServices);
+  });
+
+  // Initial update when the page loads
+  updateSelectedServices();
 </script>
+
 
 
   <!-- jQuery -->

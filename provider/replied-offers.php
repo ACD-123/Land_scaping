@@ -1,3 +1,7 @@
+<?php
+session_start();
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -257,9 +261,10 @@
                         <ul class="orderdetails-lists">
                           <li><em>Customer Offer</em><span style="color: #70BE44;">$300</span></li>
                           <li><em>Booking Time</em><span style="color: #70BE44;">21, August,4:00 AM, SUN</span></li>
-                          <li><em>Services </em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li><em>Total  amount paid</em><span style="color: #969696;">Grass Cutting <img src="./images/check.png"/>
-                            <br>Grass Cutting <img src="./images/check.png"/><br>Grass Cutting <img src="./images/check.png"/></span></li>
+                          <li><em> Services</em><span style="color: #969696;">Grass Cutting <img src="./images/check.png"/>
+                          <br>Grass Cutting <img src="./images/check.png"/><br>Grass Cutting <img src="./images/check.png"/></span></li>
+                          <li><em>Total  amount paid </em><span style="color: #70BE44;">$ 300.00</span></li>
+
                         </ul>
                       </div>
                 </div>
@@ -274,7 +279,7 @@
             <div class="row repliedoffer-secondrow">
                 <div class="col-md-6">
                     <div class="order-details-progress">
-                        <h2>Customer Offer Details</h2>
+                        <h2>Provider Counter Details</h2>
                         <ul class="orderdetails-lists">
                           <li><em>Snow Removal</em><span style="color: #70BE44;">$ 100.00</span></li>
                           <li><em>Spring Cleanup</em><span style="color: #70BE44;">$ 100.00</span></li>

@@ -1,4 +1,5 @@
 <?php
+session_start();
 // Function to get customer information from the provider_registration table
 function getCustomerInfo($customerId) {
   global $conn;
@@ -17,7 +18,7 @@ function getCustomerInfo($customerId) {
 // Function to get the price of a service from the categories table
 function getServicePrice($service) {
   global $conn;
-  $sql = "SELECT price FROM categories WHERE heading = ?";
+  $sql = "SELECT price FROM customer_services WHERE service_name = ?";
   $stmt = $conn->prepare($sql);
   $stmt->bind_param('s', $service);
   if ($stmt->execute()) {
@@ -352,9 +353,10 @@ function getCustomerImagesForProvider($customerId, $providerId) {
                           $showStartButton = false;
                           $showSheduledButton = '';
                           if ($daysRemaining === 0) {
-                              $dateClass = 'today-date';
-                              $imageSrc = './images/scheduled.png'; // Change to your desired image path
-                              $showStartButton = 'Scheduled'; 
+                            $dateClass = 'last-day-date';
+                            $imageSrc = './images/schedule.png'; // Change to your desired image path
+                            $showStartButton = true; // Set to true to show the button
+                            $showSheduledButton = 'Scheduled Today'; 
                           } elseif ($daysRemaining === 1) {
                               $dateClass = 'last-day-date';
                               $imageSrc = './images/schedule.png'; // Change to your desired image path

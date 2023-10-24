@@ -167,7 +167,7 @@ if (isset($_POST['login'])) {
                 background-size: cover; padding: 270px 30px;">
                     
                     <p>Hello, Friend! <br><b>Fill Your Info and start<br> a journey with us</b></p>
-                    <a href="http://localhost/aron_burks/customer/Signup.php"><button>Sign Up</button></a>
+                    <a href="./customer/Signup.php"><button>Sign Up</button></a>
                 </div>
 <!-- row end -->
             </div>

@@ -1,3 +1,7 @@
+<?php
+session_start();
+
+?>
 <!DOCTYPE html>
 <html lang="zxx">
 
@@ -120,7 +124,7 @@ if ($result->num_rows > 0) {
         echo '<div class="col-lg-4 mb-4 mb-lg-0">';
         echo '<a href="provider.php?id=' . $provider_id . '">';
         echo '<div class="provider-card">';
-        echo '<div style="width:100%; height:200px;">';
+        echo '<div style="width:100%;">';
         echo '<img style="object-fit:contain; width:100%; height:100%" src="../provider/' . $profile_picture . '" width="100%"/>';
         echo '</div>';
         echo '<div class="feature-info-box">';

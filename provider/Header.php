@@ -1,5 +1,5 @@
 <?php
-session_start();
+// session_start();
 include '../connection.php';
 ?>
 
@@ -72,8 +72,8 @@ include '../connection.php';
 
           <div class="dropdown">
             <!-- profile image -->
-            <a class="nav-link dropdown-toggle" id="UserDropdown" href="http://localhost/aron_burks/provider/<?php echo $profileImage; ?>" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <img class="img-xs rounded-circle" src="http://localhost/aron_burks/provider/<?php echo $profileImage; ?>"
+            <a class="nav-link dropdown-toggle" id="UserDropdown" href="./<?php echo $profileImage; ?>" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <img class="img-xs rounded-circle" src="./<?php echo $profileImage; ?>"
                 alt="Profile image">
             </a>
             <!-- profile image end -->
