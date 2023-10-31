@@ -1,5 +1,6 @@
 <?php
-include 'connection.php'
+// session_start();
+include 'connection.php';
 ?>
 
 <header class="navigation fixed-top">
@@ -12,18 +13,22 @@ include 'connection.php'
 
         <div class="collapse navbar-collapse text-center" id="navigation">
             <ul class="navbar-nav ml-auto">
-                <li class="nav-item active">
-                    <a class="nav-link" href="index.php">Home</a>
-                </li>
+                
 
                 <?php
                 if (isset($_SESSION['user_id'])) {
                 ?>
                 <li class="nav-item">
+                    <a class="nav-link" href="index.php">Home</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="notifications.php">Notifications</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="myhirings.php">My Hirings</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="myoffers.php">My Offers</a>
                 </li>
                 <?php
                    if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'customer') {
@@ -33,6 +38,7 @@ include 'connection.php'
                     if ($result->num_rows > 0) {
                         $row = $result->fetch_assoc();
                         $fullname = $row['fullname'];
+                        $_SESSION['customerFullName'] = $row['fullname'];
                         $email = $row['email'];
                         $city = $row['city'];
                         $zipcode = $row['zipcode'];

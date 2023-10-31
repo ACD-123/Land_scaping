@@ -1,5 +1,6 @@
 <?php
 // Include your database connection script
+session_start();
 include 'connection.php';
 
 // Check if the request method is POST
@@ -43,27 +44,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
        
          $stmt->bind_param('ssssssssd', $customerId, $providerId, $selectedDate->year, $selectedDate->month, $selectedDate->day, $selectedTime, $userContent, $serviceNames, $totalAmount);
  
-        if ($stmt->execute()) {
-            $proposalId = $stmt->insert_id;
-
+         if ($stmt->execute()) {
+            $proposalId = $stmt->insert_id; // Get the generated proposal_id
+            // Now, you can insert data into customer_services using the generated proposalId
             foreach ($selectedServices as $service) {
                 $serviceId = json_encode($service->serviceId);
                 $serviceName = json_decode(json_encode($service->serviceName));
                 $price = json_decode(json_encode($service->price));
-                // $price = "1";
-                $sql = "INSERT INTO customer_services (customer_id, provider_id, service_id,
-                 service_name, price, total_amount) VALUES ($customerId, $providerId, $serviceId, '$serviceName', $price, $totalAmount)";
-                if (mysqli_query($conn, $sql)) {
-                     echo "New record created successfully";
+        
+                // Insert data into customer_services with the proposal_id from customer_proposal
+                $sql = "INSERT INTO customer_services (customer_id, provider_id, proposal_id, service_id, service_name, price, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param('ssssssd', $customerId, $providerId, $proposalId, $serviceId, $serviceName, $price, $totalAmount);
+        
+                if ($stmt->execute()) {
+                    echo "New record created successfully";
                 } else {
-                     echo "Error: " . $sql . "<br>" . mysqli_error($conn);
+                    echo "Error: " . $sql . "<br>" . mysqli_error($conn);
                 }
+                $_SESSION['proposal_id'] = $proposalId;
             }
             $conn->commit();
             echo 'Data inserted successfully.';
+            echo $proposalId;
+
         } else {
             $conn->rollback();
-            echo 'Error inserting data: ' . $stmt->error;
+            echo 'Error inserting data into customer_proposal: ' . $stmt->error;
         }
 
         $stmt->close();

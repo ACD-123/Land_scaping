@@ -1,6 +1,6 @@
+
 <?php
 session_start();
-include 'connection.php';
 ?>
 <!DOCTYPE html>
 <html lang="zxx">
@@ -71,115 +71,102 @@ include 'Header.php'
 <div class="container">
     <div class="row">
         <div class="notifications-inner" >
-            <div class="notify-text" style="padding: 15px 0px;">
-                <img src="./images/hiring/hiring1.png"/>
-                <h4>Peter like has done his job in a very less time , and got a best reviews on his profile.</h4>
-                <ul style="margin: 0; padding: 0;">
-                    <li style="color: #72B763;">Just Now</li>
-            </ul>
-            </div>
+        <?php
+include 'connection.php';
 
-            <div class="notify-text" style="padding: 15px 0px;">
-                <img src="./images/hiring/hiring2.png"/>
-                <h4>Mick taison is available for the job with his expertise skills</h4>
-                <ul style="margin: 0; padding: 0;">
-                    <li>1 hours ago</li>
-                    <li>Window Tint, Mechanic , Tuning .</li>
-            </ul>
-            </div>
+// Function to get customer information from the provider_registration table
+function getCustomerInfo($providerId) {
+    global $conn;
+    $sql = "SELECT fullname, profile_picture, address FROM provider_registration WHERE id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('s', $providerId);
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row;
+        }
+    }
+    return array('fullname' => 'N/A', 'address' => 'N/A', 'profile_picture' => 'N/A'); // Provide default values if customer info not found
+}
 
-            <div class="notify-text" style="padding: 15px 0px;">
-                <img src="./images/hiring/hiring3.png"/>
-                <h4>Lee is ready to go anywhere along with the tool kit & transportation. He is free RN!</h4>
-                <ul style="margin: 0; padding: 0;">
-                    <li>1 hours ago</li>
-                    <li>Mechanic.</li>
-            </ul>
-            </div>
+function getNotifications($userId) {
+    global $conn;
+    $sql = "SELECT messages.message_content, messages.provider_id, provider_registration.fullname, provider_registration.profile_picture FROM messages
+            INNER JOIN provider_registration ON messages.provider_id = provider_registration.id
+            WHERE messages.customer_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('i', $userId);
 
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        $notifications = array();
 
-            <div class="notify-text" style="padding: 15px 0px;">
-                <img src="./images/hiring/hiring4.png"/>
-                <h4>Lee is ready to go anywhere along with the tool kit & transportation. He is free RN!</h4>
-                <ul style="margin: 0; padding: 0;">
-                    <li>1 hours ago</li>
-                    <li>Mechanic.</li>
-            </ul>
-            </div>
+        while ($row = $result->fetch_assoc()) {
+            $messageContent = $row['message_content'];
+            $providerName = $row['fullname'];
+            $profilePicture = $row['profile_picture'];
+            $notifications[] = array('message_content' => $messageContent, 'provider_name' => $providerName, 'profile_picture' => $profilePicture);
+        }
 
+        return $notifications;
+    }
 
-            <div class="notify-text" style="padding: 15px 0px;">
-                <img src="./images/hiring/hiring1.png"/>
-                <h4>Lee is ready to go anywhere along with the tool kit & transportation. He is free RN!</h4>
-                <ul style="margin: 0; padding: 0;">
-                    <li>1 hours ago</li>
-                    <li>Mechanic.</li>
-            </ul>
-            </div>
+    return array();
+}
 
-            <div class="notify-text" style="padding: 15px 0px;">
-                <img src="./images/hiring/hiring2.png"/>
-                <h4>Lee is ready to go anywhere along with the tool kit & transportation. He is free RN!</h4>
-                <ul style="margin: 0; padding: 0;">
-                    <li>1 hours ago</li>
-                    <li>Mechanic.</li>
-            </ul>
-            </div>
+$userId = $_SESSION['user_id'];
 
-            <div class="notify-text" style="padding: 15px 0px;">
-                <img src="./images/hiring/hiring3.png"/>
-                <h4>Lee is ready to go anywhere along with the tool kit & transportation. He is free RN!</h4>
-                <ul style="margin: 0; padding: 0;">
-                    <li>1 hours ago</li>
-                    <li>Mechanic.</li>
-            </ul>
-            </div>
+$sql = "SELECT * FROM customer_proposal WHERE customer_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param('s', $userId);
 
-            <div class="notify-text" style="padding: 15px 0px;">
-                <img src="./images/hiring/hiring4.png"/>
-                <h4>Lee is ready to go anywhere along with the tool kit & transportation. He is free RN!</h4>
-                <ul style="margin: 0; padding: 0;">
-                    <li>1 hours ago</li>
-                    <li>Mechanic.</li>
-            </ul>
-            </div>
+if ($stmt->execute()) {
+    $result = $stmt->get_result();
 
-            <div class="notify-text" style="padding: 15px 0px;">
-                <img src="./images/hiring/hiring1.png"/>
-                <h4>Lee is ready to go anywhere along with the tool kit & transportation. He is free RN!</h4>
-                <ul style="margin: 0; padding: 0;">
-                    <li>1 hours ago</li>
-                    <li>Mechanic.</li>
-            </ul>
-            </div>
+    if ($result->num_rows == 0) {
+        echo '<h2 class="text-center texter">No new orders available.</h2>';
+    } else {
+        while ($row = $result->fetch_assoc()) {
+            $proposalId = $row['id'];
+            $customerId = $row['customer_id'];
+            $providerId = $row['provider_id'];
+            $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+            $selectedTime = $row['selected_time'];
+            $userContent = $row['user_content'];
+            $selectedServices = explode(', ', $row['selected_services']);
+            $totalAmount = $row['total_amount'];
+            $counterTotall = $row['counter_totall'];
+            $current_time = $row['current_time'];
 
-            <div class="notify-text" style="padding: 15px 0px;">
-                <img src="./images/hiring/hiring2.png"/>
-                <h4>Lee is ready to go anywhere along with the tool kit & transportation. He is free RN!</h4>
-                <ul style="margin: 0; padding: 0;">
-                    <li>1 hours ago</li>
-                    <li>Mechanic.</li>
-            </ul>
-            </div>
+            // Retrieve customer name and address based on providerId
+            $customerInfo = getCustomerInfo($providerId);
 
-            <div class="notify-text" style="padding: 15px 0px;">
-                <img src="./images/hiring/hiring3.png"/>
-                <h4>Lee is ready to go anywhere along with the tool kit & transportation. He is free RN!</h4>
-                <ul style="margin: 0; padding: 0;">
-                    <li>1 hours ago</li>
-                    <li>Mechanic.</li>
-            </ul>
-            </div>
+            // Output the retrieved customer name and address
+            $customerName = $customerInfo['fullname'];
+            $customerAddress = $customerInfo['address'];
+            $profilePicture = $customerInfo['profile_picture'];
 
-            <div class="notify-text" style="padding: 15px 0px;">
-                <img src="./images/hiring/hiring4.png"/>
-                <h4>Lee is ready to go anywhere along with the tool kit & transportation. He is free RN!</h4>
-                <ul style="margin: 0; padding: 0;">
-                    <li>1 hours ago</li>
-                    <li>Mechanic.</li>
-            </ul>
-            </div>
+            // Display customer notifications for this proposal
+            $notificationsArray = getNotifications($userId);
 
+          }
+          foreach ($notificationsArray as $notification) {
+              $messageContent = $notification['message_content'];
+              $providerName = $notification['provider_name'];
+              $providerProfilePicture = $notification['profile_picture'];
+
+              echo "<div class='notify-text' style='padding: 15px 0px;'>";
+              echo "<img src='../provider/$providerProfilePicture' />";
+              echo "<h4>Provider: $providerName</h4>";
+              echo "<p>Message: $messageContent</p>";
+              echo "</div>";
+          }
+    }
+} else {
+    echo 'Error executing the query.';
+}
+?>
 
 
         </div>
@@ -191,66 +178,9 @@ include 'Header.php'
 
 
 <!-- footer start -->
-<footer id="footer-section">
-<div class="container">
-  <div class="footer-widgets">
-    <div class="row" style="padding: 60px 0px 30px 0px;">
-      <div class="col-lg-3 mb-3 mb-lg-0">
-        <img class="footerlogo" src="./images/footerlogo.png" width="100%"/>
-        <div class="social-links">
-          <ul>
-            <li><a href="#"><i class="fa fa-facebook" aria-hidden="true"></i></a></li>
-            <li><a href="#"><i class="fa fa-instagram" aria-hidden="true"></i></a></li>
-            <li><a href="#"><i class="fa fa-twitter" aria-hidden="true"></i></a></li>
-          </ul>
-        </div>
-      </div>
-      <div class="col-lg-3 mb-3 mb-lg-0">
-        <h4>Company</h4>
-        <div class="nav-links-footer">
-          <ul>
-            <li><a href="#">About</a></li>
-            <li><a href="#">Commericals</a></li>
-            <li><a href="#">Exclusive</a></li>
-            <li><a href="#">Services</a></li>
-            <li><a href="#">residential individuals</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="col-lg-3 mb-3 mb-lg-0">
-        <h4>Contact</h4>
-        <div class="nav-links-footer">
-          <ul>
-            <li><a href="#">Help/FAQs</a></li>
-            <li><a href="#">Press</a></li>
-            <li><a href="#">Affilates</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="col-lg-3 mb-3 mb-lg-0">
-        <h4>Services</h4>
-        <div class="nav-links-footer">
-          <ul>
-            <li><a href="#">Lawn Mowing</a></li>
-            <li><a href="#">Grass cutting</a></li>
-            <li><a href="#">Spring Clean up</a></li>
-            <li><a href="#">Lawn Maintenance</a></li>
-            <li><a href="#">Seeding/ Aeration</a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<hr>
-<div class="footer-copyright">
-  <div class="container">
-<p>Copyright are Reserved@Apexcreativedesign.com</p>
-  </div>
-</div>
-</footer>
+<?php
+include 'footer.php'
+?>
 
 <!-- footer end -->
 

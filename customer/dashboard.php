@@ -1,7 +1,98 @@
-
 <?php
 session_start();
+// Function to get customer information from the provider_registration table
+function getCustomerInfo($providerId) {
+  global $conn;
+  $sql = "SELECT fullname, profile_picture, address FROM provider_registration WHERE id = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param('s', $providerId);
+  if ($stmt->execute()) {
+      $result = $stmt->get_result();
+      if ($result->num_rows > 0) {
+          $row = $result->fetch_assoc();
+          return $row;
+      }
+  }
+  return array('fullname' => 'N/A', 'address' => 'N/A', 'profile_picture' => 'N/A'); // Provide default values if customer info not found
+}
+// Function to get the price of a service from the categories table
+function getCustomerServicesAndPrices($providerId, $proposalId, $userId) {
+    global $conn;
+    $sql = "SELECT service_name, price, counter_price FROM customer_services WHERE provider_id = ? AND proposal_id = ? AND customer_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('sss', $providerId, $proposalId, $userId);
 
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        $servicesAndPrices = array();
+
+        while ($row = $result->fetch_assoc()) {
+            $serviceCustomers = $row['service_name'];
+            $priceService = $row['price'];
+            $counterPrice = $row['counter_price'];
+            $servicesAndPrices[] = array('service_name' => $serviceCustomers, 'price' => $priceService, 'counter_price' => $counterPrice);
+            // print_r($servicesAndPrices);
+        }
+
+        return $servicesAndPrices;
+    }
+
+    return array();
+}
+function getServicePrice($service) {
+    global $conn;
+    $sql = "SELECT price FROM customer_services WHERE service_name = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('s', $service);
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row['price'];
+        }
+    }
+    return 'N/A'; // Provide a default value if service price not found
+  }
+  function getCustomerImagesForProvider($providerId, $proposalId, $customerId) {
+    global $conn;
+    $sql = "SELECT image_path FROM customer_images WHERE provider_id = ? AND proposal_id = ? AND customer_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('sss', $providerId, $proposalId, $customerId);
+    if ($stmt->execute()) {
+      $result = $stmt->get_result();
+      $images = array();
+      while ($row = $result->fetch_assoc()) {
+        $images[] = $row['image_path'];
+      }
+      return $images;
+    }
+    return array();
+  }
+
+
+function getServiceImages($service) {
+  global $conn;
+  $servicesImages = array();
+
+  // Create a prepared statement to select servicesImages based on service names
+  $sql = "SELECT image FROM categories WHERE heading IN (?)";
+  $stmt = $conn->prepare($sql);
+
+  if ($stmt) {
+      $categories = implode("', '", $service); // Assuming service names are in an array
+      $stmt->bind_param('s', $categories);
+
+      if ($stmt->execute()) {
+          $result = $stmt->get_result();
+
+          while ($row = $result->fetch_assoc()) {
+              $servicesImages[] = $row['image'];
+          }
+      }
+  }
+
+  return $servicesImages;
+}
 ?>
 <!DOCTYPE html>
 <html lang="zxx">
@@ -58,7 +149,63 @@ include 'Black_logo_header.php'
 <div class="container">
     <h2>Dashboard</h2>
     <div class="row">
-        <div class="col-lg-4 mb-3 mb-lg-0">
+    <?php
+include 'connection.php';
+
+$userId = $_SESSION['user_id'];
+
+// Create an array to store the count for each status
+$statusCounts = array(
+    'order_in_progress' => 0,
+    'scheduled_offer' => 0,
+    'replied_offer' => 0,
+    // Add more statuses as needed
+);
+
+$sql = "SELECT * FROM customer_proposal WHERE customer_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param('s', $userId);
+
+if ($stmt->execute()) {
+    $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $status = $row['status'];
+
+            // Update the count for the respective status
+            if (array_key_exists($status, $statusCounts)) {
+                $statusCounts[$status]++;
+            }
+        }
+    }
+}
+
+// Output the count of proposals for each status
+echo '<div class="col-lg-4 mb-3 mb-lg-0">';
+echo '<div class="miles-runners">';
+echo '<number>' . $statusCounts['order_in_progress'] . '</number>';
+echo '<p>Completed Tasks</p>';
+echo '</div>';
+echo '</div>';
+
+echo '<div class="col-lg-4 mb-3 mb-lg-0">';
+echo '<div class="miles-runners">';
+echo '<number>' . $statusCounts['scheduled_offer'] . '</number>';
+echo '<p>Scheduled Hiring\'s</p>';
+echo '</div>';
+echo '</div>';
+
+echo '<div class="col-lg-4 mb-3 mb-lg-0">';
+echo '<div class="miles-runners">';
+echo '<number>' . $statusCounts['replied_offer'] . '</number>';
+echo '<p>Recent Offer\'s</p>';
+echo '</div>';
+echo '</div>';
+
+// You can continue this pattern for other statuses if needed
+?>
+
+        <!-- <div class="col-lg-4 mb-3 mb-lg-0">
             <div class="miles-runners">
                 <number>20</number>
                 <p>Completed Tasks</p>
@@ -69,13 +216,13 @@ include 'Black_logo_header.php'
                 <number>40</number>
                 <p>Scheduled Hiring's</p>
             </div>
-        </div>
-        <div class="col-lg-4 mb-3 mb-lg-0">
+        </div> -->
+        <!-- <div class="col-lg-4 mb-3 mb-lg-0">
             <div class="miles-runners">
                 <number>140</number>
                 <p>Recent Offers</p>
             </div>
-        </div>
+        </div> -->
     </div>
 </div>
 </div>
@@ -91,145 +238,314 @@ include 'Black_logo_header.php'
 <div class="col-lg-6 mb-3 mb-lg-0">
 <div class="dash-hiring-inner" style="padding: 30px 0px;">
   <h2>My Hiring's</h2>
-  <div class="hiring-list-main" style="padding: 30px 30px; margin-bottom: 30px;">
-    <div class="dash-text-wthicn">
-      <div class="text-inner">
-        <img src="./images/hiring/hiring1.png">
-        <div class="dash-text-all">
-      <h5>David Johnson</h5>
-       <h6>Garden Maintenance</h6>
-       <h4>Hired On 22,August,2022</h4>
-      </div>
-      </div>
-      <div class="dash-order-list">
-<ul>
-  <li><em><img src="./images/dashboard/calender.png"/> 21, August,4:00 AM, SUN</em></li>
-  <li><em><img src="./images/dashboard/grass2.png"/> Grass Cutting</em></li>
-  <li><em><img src="./images/dashboard/grass.png"/> Snowfall removal</em><span>Order#: 783ds8d798c</span></li>
-</ul>
-      </div>
-    </div>
-    <div class="schedulebutton">
-<a href="#"><button><img src="./images/dashboard/check.png"/> Scheduled</button></a>
-    </div>
-  </div>
+  <?php
+              include 'connection.php';
 
-  <!-- 2ND HIRING -->
-  <div class="hiring-list-main" style="padding: 30px 30px; margin-bottom: 30px;">
-    <div class="dash-text-wthicn">
-      <div class="text-inner">
-        <img src="./images/hiring/hiring1.png">
-        <div class="dash-text-all">
-      <h5>David Johnson</h5>
-       <h6>Garden Maintenance</h6>
-       <h4>Hired On 22,August,2022</h4>
-      </div>
-      </div>
-      <div class="dash-order-list">
-<ul>
-  <li><em><img src="./images/dashboard/calender.png"/> 21, August,4:00 AM, SUN</em></li>
-  <li><em><img src="./images/dashboard/grass2.png"/> Grass Cutting</em></li>
-  <li><em><img src="./images/dashboard/grass.png"/> Snowfall removal</em><span>Order#: 783ds8d798c</span></li>
-</ul>
-      </div>
-    </div>
-    <div class="ontheway">
-<a href="#"><button><img src="./images/dashboard/check.png"/> On the Way</button></a>
-    </div>
-  </div>
+              $userId = $_SESSION['user_id'];
 
-  <!-- 3RD HIRING -->
-  <div class="hiring-list-main" style="padding: 30px 30px; margin-bottom: 30px;">
-    <div class="dash-text-wthicn">
-      <div class="text-inner">
-        <img src="./images/hiring/hiring1.png">
-        <div class="dash-text-all">
-      <h5>David Johnson</h5>
-       <h6>Garden Maintenance</h6>
-       <h4>Hired On 22,August,2022</h4>
-      </div>
-      </div>
-      <div class="dash-order-list">
-<ul>
-  <li><em><img src="./images/dashboard/calender.png"/> 21, August,4:00 AM, SUN</em></li>
-  <li><em><img src="./images/dashboard/grass2.png"/> Grass Cutting</em></li>
-  <li><em><img src="./images/dashboard/grass.png"/> Snowfall removal</em><span>Order#: 783ds8d798c</span></li>
-</ul>
+              $sql = "SELECT * FROM customer_proposal WHERE customer_id = ? AND (status = 'order_in_progress' OR status = 'scheduled_offer')";
+              $stmt = $conn->prepare($sql);
+              $stmt->bind_param('s', $userId);
+
+              if ($stmt->execute()) {
+                  $result = $stmt->get_result();
+                  if ($result->num_rows == 0) {
+                    // No orders found for the provider
+                    echo '<h2 class="text-center texter">No new Hirings available.</h2>';
+                } else {
+            while ($row = $result->fetch_assoc()) {
+                $proposalId = $row['id'];
+                $customerId = $row['customer_id'];
+                $providerId = $row['provider_id'];
+                $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+                $selectedTime = $row['selected_time'];
+                $userContent = $row['user_content'];
+                $selectedServices = explode(', ', $row['selected_services']);
+                $totalAmount = $row['total_amount'];
+                $counterTotall = $row['counter_totall'];
+                $current_time = $row['current_time'];
+
+                // Retrieve customer name and address based on customerId
+                $customerInfo = getCustomerInfo($providerId);
+
+                $customerImages = getCustomerImagesForProvider($providerId, $proposalId, $customerId);
+                $serviceCustomers = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                $serviceCustomers1 = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                // Output the retrieved customer name and address
+                $customerName = $customerInfo['fullname'];
+                $customerAddress = $customerInfo['address'];
+                $profile_picture = $customerInfo['profile_picture'];
+            ?>
+                              <div class="hiring-list-main" style="padding: 30px 30px; margin-bottom: 30px;">
+                                <div class="dash-text-wthicn">
+                                  <div class="text-inner">
+                                    <img src="../provider/<?php echo $profile_picture?>">
+                                    <div class="dash-text-all">
+                                  <h5><?php echo $customerName?></h5>
+                                  <h6>Garden Maintenance</h6>
+                                  <h4>Hired On <?php echo $current_time?></h4>
+                                  </div>
+                                  </div>
+                                  <div class="dash-order-list">
+                                    <ul>
+                                      <li><em><img src="./images/dashboard/calender.png"/> <?php echo $selectedDate , str_repeat('&nbsp;', 5), $selectedTime?></em></li>
+                                      <?php
+                                        $platformChargesPercentage = 10;
+
+                                        $platformCharges = ($totalAmount * $platformChargesPercentage) / 100;
+
+                                        $amountYouWillEarn = $totalAmount - $platformCharges;
+
+                                        $serviceCustomers1Index = 0;
+
+                                        $counter = 1;
+                                        foreach ($selectedServices as $service) {
+                                            // $displayTotal = isset($counterTotall) ? $counterTotall : $totalAmount;
+                                            $serviceImages = getServiceImages([$service]);
+                                            $serviceCustomers1Item = $serviceCustomers1[$serviceCustomers1Index];
+
+                                            $servicesNew = $serviceCustomers1Item['service_name'];
+                                            $servicePrice = $serviceCustomers1Item['price'];
+                                            // $counterNote = $serviceCustomers1Item['counter_note'];
+
+                                            $serviceCustomers1Index++;
+                                            ?>
+                                            <?php 
+                                                    foreach ($serviceImages as $imagePath) {
+                                                        ?>
+                                                        <!-- <img src="../admin/uploads/ <?php //echo $imagePath ?>" alt="Service Image" /> -->
+                                                        <li><em><img src="../admin/uploads/<?php echo $imagePath?>"/> <?php echo $servicesNew ?></em></li>
+                                                        <?php $counter++; } ?>
+                                                        <?php 
+                                        $counter++; } ?>
+        </ul>
       </div>
     </div>
-    <div class="schedulebutton">
-<a href="#"><button><img src="./images/dashboard/check.png"/> Scheduled</button></a>
-    </div>
+    <?php if ($row['status'] === 'scheduled_offer') { ?>
+        <div class="schedulebutton">
+            <a href="#"><button><img src="./images/dashboard/check.png"/> Scheduled</button></a>
+        </div>
+        <?php } else { ?>
+            <div class="schedulebutton">
+                <a href="#"><button style="background:#51A699;"><img src="./images/dashboard/check.png"/> Order In Progress</button></a>
+            </div>
+            <?php } ?>
+    <!-- <div class="schedulebutton">
+      <a href="#"><button><img src="./images/dashboard/check.png"/> Scheduled</button></a>
+    </div> -->
+    
   </div>
+  <script>
+        const content<?php echo $proposalId ?> = document.querySelector('.content<?php echo $proposalId ?>');
+        const readMoreButton<?php echo $proposalId ?> = document.querySelector('.read-more-button<?php echo $proposalId ?>');
+
+        readMoreButton<?php echo $proposalId ?>.addEventListener('click', function () {
+            if (content<?php echo $proposalId ?>.classList.contains('hidden')) {
+                content<?php echo $proposalId ?>.classList.remove('hidden');
+                readMoreButton<?php echo $proposalId ?>.textContent = 'See Less';
+            } else {
+                content<?php echo $proposalId ?>.classList.add('hidden');
+                readMoreButton<?php echo $proposalId ?>.textContent = 'See More';
+            }
+        });
+    </script>
+        <?php
+     }
+    }
+} else {
+    echo 'Error executing the query.';
+}
+?>
 </div>
 </div>
 
 <div class="col-lg-6 mb-3 mb-lg-0">
-<div class="recent-offer-inner">
-  <h2>Recent Offers</h2>
-  <div class="recent-text-inner" style="padding: 30px 0px;">
-    <img src="./images/hiring/hiring1.png">
-    <div class="dash-text-all">
-  <h5>David Johnson</h5>
-   <h6>Garden Maintenance</h6>
-   <h4>offered On 22,August,2022</h4>
-  </div>
-  <div class="dash-order-list">
-    <ul>
-      <li><em><img src="./images/dashboard/calender.png"/> 21, August,4:00 AM, SUN</em></li>
-      <li><em><img src="./images/dashboard/grass2.png"/> Grass Cutting</em></li>
-      <li><em><img src="./images/dashboard/grass.png"/> Snowfall removal</em><span>Counter Offer : $300</span></li>
-    </ul>
-          </div>
-          <div class="recent-button">
-            <a href="#"><button> Accept</button></a>
-            <a class="decline" href="#"><button> Decline</button></a>
-                </div>
-  </div>
+    <div class="recent-offer-inner">
+      <h2>Recent Offers</h2>
+      <?php
+              include 'connection.php';
 
+              $userId = $_SESSION['user_id'];
+
+              $sql = "SELECT * FROM customer_proposal WHERE customer_id = ? AND status = 'replied_offer'";
+              $stmt = $conn->prepare($sql);
+              $stmt->bind_param('s', $userId);
+
+              if ($stmt->execute()) {
+                  $result = $stmt->get_result();
+                  if ($result->num_rows == 0) {
+                    // No orders found for the provider
+                    echo '<h2 class="text-center texter">No Recent orders available.</h2>';
+                } else {
+            while ($row = $result->fetch_assoc()) {
+                $proposalId = $row['id'];
+                $customerId = $row['customer_id'];
+                $providerId = $row['provider_id'];
+                $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+                $selectedTime = $row['selected_time'];
+                $userContent = $row['user_content'];
+                $selectedServices = explode(', ', $row['selected_services']);
+                $totalAmount = $row['total_amount'];
+                $current_time = $row['current_time'];
+                $currentTotall = $row['counter_totall'];
+
+                // Retrieve customer name and address based on customerId
+                $customerInfo = getCustomerInfo($providerId);
+
+                $customerImages = getCustomerImagesForProvider($providerId, $proposalId, $customerId);
+                $serviceCustomers = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                $serviceCustomers1 = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                
+                
+                // Now you have an array containing the selected services and their prices for the customer
+                
+                // Output the retrieved customer name and address
+                $customerName = $customerInfo['fullname'];
+                $customerAddress = $customerInfo['address'];
+                $profile_picture = $customerInfo['profile_picture'];
+            ?>
+             <div class="modal" id="accept<?php echo $proposalId?>" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="confirmationModalLabel">Confirm Acceptance</h5>
+                                       
+                                    </div>
+                                    <div class="modal-body h-auto">
+                                        <h2 class="pb-4">Are you sure you want to accept this offer?</h2>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                                        <button type="button" class="btn btn-primary" data-dismiss="modal"
+                                            onclick="acceptOffers(<?php echo $proposalId; ?>)">Accept</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal" id="rejects<?php echo $proposalId?>" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        
+                                    </div>
+                                    <div class="modal-body h-auto">
+                                        <h2 class="pb-4">Are you sure you want to reject this offer?</h2>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                                        <button type="button" class="btn btn-primary" data-dismiss="modal"
+                                            onclick="rejectOffers(<?php echo $proposalId; ?>)">yes</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                                    <div class="recent-text-inner" style="padding: 30px 0px;">
+                                        <img src="../provider/<?php echo $profile_picture?>">
+                                        <div class="dash-text-all">
+                                          <h5><?php echo $customerName?></h5>
+                                          <h6>Garden Maintenance</h6>
+                                          <h4>offered On <?php echo $current_time?></h4>
+                                        </div>
+                                        <div class="dash-order-list">
+                                          <ul>
+                                            <li><em><img src="./images/dashboard/calender.png"/> <?php echo $selectedDate , str_repeat('&nbsp;', 5), $selectedTime?></em></li>
+                                            <?php
+                                        $platformChargesPercentage = 10;
+
+                                        $platformCharges = ($totalAmount * $platformChargesPercentage) / 100;
+
+                                        $amountYouWillEarn = $totalAmount - $platformCharges;
+
+                                        $serviceCustomers1Index = 0;
+
+                                        $counter = 1;
+                                        foreach ($selectedServices as $service) {
+                                            // $displayTotal = isset($counterTotall) ? $counterTotall : $totalAmount;
+                                            $serviceImages = getServiceImages([$service]);
+                                            $serviceCustomers1Item = $serviceCustomers1[$serviceCustomers1Index];
+
+                                            $servicesNew = $serviceCustomers1Item['service_name'];
+                                            $servicePrice = $serviceCustomers1Item['counter_price'];
+                                            // $counterNote = $serviceCustomers1Item['counter_note'];
+
+                                            $serviceCustomers1Index++;
+                                            ?>
+                                            <?php 
+                                                    foreach ($serviceImages as $imagePath) {
+                                                        ?>
+                                                        <!-- <img src="../admin/uploads/ <?php //echo $imagePath ?>" alt="Service Image" /> -->
+                                                        <li><em><img src="../admin/uploads/<?php echo $imagePath?>"/> <?php echo $servicesNew ?></em></li>
+                                                        <?php $counter++; } ?>
+                                                        <?php 
+                                        $counter++; } ?>
+                                        <li style="
+    display: flow-root;
+"><span>Counter Offer : $<?php echo $currentTotall?></span></li>
+                                          </ul>
+                                        </div>
+                                        <div class="recent-button">
+                                        <a href="javascript:void(0);">
+                                            <button type="button" data-toggle="modal" data-target="#accept<?php echo $proposalId;?>"
+                                                data-proposal-id="<?php echo $proposalId; ?>">Accept Offer</button>
+                                        </a>
+                                        <a class="ignore1" href="javascript:void(0);"><button type="button" data-toggle="modal" style="background:red" data-target="#rejects<?php echo $proposalId;?>"
+                                                data-proposal-id="<?php echo $proposalId; ?>">Reject</button></a>
+                                        </div>
+                                    </div>
+    <script>
+                function acceptOffers(proposalId) {
+                    // Send an AJAX request to update the status to "scheduled_offer"
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', 'update_status.php'); // Create a PHP file to handle status updates
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.send(JSON.stringify({ proposalId: proposalId, status: 'scheduled_offer' }));
+
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            // Handle the server's response here, if needed
+                            console.log(xhr.responseText);
+
+                            // Reload the page after the status is updated
+                            location.reload(); // This will refresh the current page
+                        }
+                    };
+                }
+
+            </script>
+            <script>
+                function rejectOffers(proposalId) {
+                    // Send an AJAX request to update the status to "scheduled_offer"
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', 'update_status.php'); // Create a PHP file to handle status updates
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.send(JSON.stringify({ proposalId: proposalId, status: 'reject_offer' }));
+
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            // Handle the server's response here, if needed
+                            console.log(xhr.responseText);
+
+                            // Reload the page after the status is updated
+                            location.reload(); // This will refresh the current page
+                        }
+                    };
+                }
+
+            </script>
+    <?php
+     }
+    }
+} else {
+    echo 'Error executing the query.';
+}
+?>
   <!-- 2ND RECENT OFFER  -->
-  <div class="recent-text-inner" style="padding: 30px 0px;">
-    <img src="./images/hiring/hiring1.png">
-    <div class="dash-text-all">
-  <h5>David Johnson</h5>
-   <h6>Garden Maintenance</h6>
-   <h4>offered On 22,August,2022</h4>
-  </div>
-  <div class="dash-order-list">
-    <ul>
-      <li><em><img src="./images/dashboard/calender.png"/> 21, August,4:00 AM, SUN</em></li>
-      <li><em><img src="./images/dashboard/grass2.png"/> Grass Cutting</em></li>
-      <li><em><img src="./images/dashboard/grass.png"/> Snowfall removal</em><span>Counter Offer : $300</span></li>
-    </ul>
-          </div>
-          <div class="recent-button">
-            <a href="#"><button> Accept</button></a>
-            <a class="decline" href="#"><button> Decline</button></a>
-                </div>
-  </div>
+  
 
 
 
-  <!-- 3RD RECENT OFFER -->
-  <div class="recent-text-inner" style="padding: 30px 0px;">
-    <img src="./images/hiring/hiring1.png">
-    <div class="dash-text-all">
-  <h5>David Johnson</h5>
-   <h6>Garden Maintenance</h6>
-   <h4>offered On 22,August,2022</h4>
-  </div>
-  <div class="dash-order-list">
-    <ul>
-      <li><em><img src="./images/dashboard/calender.png"/> 21, August,4:00 AM, SUN</em></li>
-      <li><em><img src="./images/dashboard/grass2.png"/> Grass Cutting</em></li>
-      <li><em><img src="./images/dashboard/grass.png"/> Snowfall removal</em><span>Counter Offer : $300</span></li>
-    </ul>
-          </div>
-          <div class="recent-button">
-            <a href="#"><button> Accept</button></a>
-            <a class="decline" href="#"><button> Decline</button></a>
-                </div>
-  </div>
 </div>
 </div>
 

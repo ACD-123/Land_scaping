@@ -1,6 +1,98 @@
 <?php
 session_start();
+// Function to get customer information from the provider_registration table
+function getCustomerInfo($providerId) {
+  global $conn;
+  $sql = "SELECT fullname, profile_picture, address FROM provider_registration WHERE id = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param('s', $providerId);
+  if ($stmt->execute()) {
+      $result = $stmt->get_result();
+      if ($result->num_rows > 0) {
+          $row = $result->fetch_assoc();
+          return $row;
+      }
+  }
+  return array('fullname' => 'N/A', 'address' => 'N/A', 'profile_picture' => 'N/A'); // Provide default values if customer info not found
+}
+// Function to get the price of a service from the categories table
+function getCustomerServicesAndPrices($providerId, $proposalId, $userId) {
+    global $conn;
+    $sql = "SELECT service_name, price, counter_price FROM customer_services WHERE provider_id = ? AND proposal_id = ? AND customer_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('sss', $providerId, $proposalId, $userId);
 
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        $servicesAndPrices = array();
+
+        while ($row = $result->fetch_assoc()) {
+            $serviceCustomers = $row['service_name'];
+            $priceService = $row['price'];
+            $counterPrice = $row['counter_price'];
+            $servicesAndPrices[] = array('service_name' => $serviceCustomers, 'price' => $priceService, 'counter_price' => $counterPrice);
+            // print_r($servicesAndPrices);
+        }
+
+        return $servicesAndPrices;
+    }
+
+    return array();
+}
+function getServicePrice($service) {
+    global $conn;
+    $sql = "SELECT price FROM customer_services WHERE service_name = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('s', $service);
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row['price'];
+        }
+    }
+    return 'N/A'; // Provide a default value if service price not found
+  }
+  function getCustomerImagesForProvider($providerId, $proposalId, $customerId) {
+    global $conn;
+    $sql = "SELECT image_path FROM customer_images WHERE provider_id = ? AND proposal_id = ? AND customer_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('sss', $providerId, $proposalId, $customerId);
+    if ($stmt->execute()) {
+      $result = $stmt->get_result();
+      $images = array();
+      while ($row = $result->fetch_assoc()) {
+        $images[] = $row['image_path'];
+      }
+      return $images;
+    }
+    return array();
+  }
+
+
+function getServiceImages($service) {
+  global $conn;
+  $servicesImages = array();
+
+  // Create a prepared statement to select servicesImages based on service names
+  $sql = "SELECT image FROM categories WHERE heading IN (?)";
+  $stmt = $conn->prepare($sql);
+
+  if ($stmt) {
+      $categories = implode("', '", $service); // Assuming service names are in an array
+      $stmt->bind_param('s', $categories);
+
+      if ($stmt->execute()) {
+          $result = $stmt->get_result();
+
+          while ($row = $result->fetch_assoc()) {
+              $servicesImages[] = $row['image'];
+          }
+      }
+  }
+
+  return $servicesImages;
+}
 ?>
 <!DOCTYPE html>
 <html lang="zxx" class="myhirings">
@@ -97,6 +189,48 @@ include 'Black_logo_header.php'
 
 
       <div class="tab-pane active" id="tabs-1" role="tabpanel">
+      <?php
+              include 'connection.php';
+
+              $userId = $_SESSION['user_id'];
+
+              $sql = "SELECT * FROM customer_proposal WHERE customer_id = ? AND status = 'scheduled_offer'";
+              $stmt = $conn->prepare($sql);
+              $stmt->bind_param('s', $userId);
+
+              if ($stmt->execute()) {
+                  $result = $stmt->get_result();
+                  if ($result->num_rows == 0) {
+                    // No orders found for the provider
+                    echo '<h2 class="text-center texter">No new orders available.</h2>';
+                } else {
+            while ($row = $result->fetch_assoc()) {
+                $proposalId = $row['id'];
+                $customerId = $row['customer_id'];
+                $providerId = $row['provider_id'];
+                $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+                $selectedTime = $row['selected_time'];
+                $userContent = $row['user_content'];
+                $selectedServices = explode(', ', $row['selected_services']);
+                $totalAmount = $row['total_amount'];
+                $counterTotall = $row['counter_totall'];
+                $current_time = $row['current_time'];
+
+                // Retrieve customer name and address based on customerId
+                $customerInfo = getCustomerInfo($providerId);
+
+                $customerImages = getCustomerImagesForProvider($providerId, $proposalId, $customerId);
+                $serviceCustomers = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                $serviceCustomers1 = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                
+                
+                // Now you have an array containing the selected services and their prices for the customer
+                
+                // Output the retrieved customer name and address
+                $customerName = $customerInfo['fullname'];
+                $customerAddress = $customerInfo['address'];
+                $profile_picture = $customerInfo['profile_picture'];
+            ?>
         <!-- hiring panel start -->
         <section id="hiring" style="padding: 60px 0px;">
           <div class="container">
@@ -104,9 +238,10 @@ include 'Black_logo_header.php'
               <div class="row first-inner">
                 <div class="col-lg-3 mb-3 mb-lg-0">
                   <div class="textwith-icon1">
-                    <img src="./images/hiring/hiring1.png" />
+                    <img src="../provider/<?php echo $profile_picture?>" />
                     <div class="text-inner">
-                      <h5>David Johnson</h5>
+                      <?php echo $providerId?>
+                      <h5><?php echo $customerName?></h5>
                       <h6>Garden Maintenance</h6>
                     </div>
                   </div>
@@ -118,7 +253,7 @@ include 'Black_logo_header.php'
                 </div>
                 <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
                   <div class="textwith-icon2">
-                    <i class="fa fa-clock" aria-hidden="true"></i> 21, August,4:00 AM, SUN
+                    <i class="fa fa-clock" aria-hidden="true"></i> <?php echo $selectedDate , str_repeat('&nbsp;', 5), $selectedTime?>
                   </div>
                 </div>
                 <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
@@ -136,41 +271,61 @@ include 'Black_logo_header.php'
                   <h2>Services Selected</h2>
                   <div class="pricedetails">
                     <ul>
-                      <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Snow Removal</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Grass Cutting</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li class="custom-total-price"><em>Total Cost offer</em> <span style="color: #70BE44;">$
-                          300.00</span></li>
+                    <?php $displayTotal = isset($counterTotall) ? $counterTotall : $totalAmount;
+                          foreach ($serviceCustomers as $servicenew) {
+                              $services = $servicenew['service_name'];
+                              $servicePrice = $servicenew['price'];
+                              
+                              // Check if counter service price is available
+                              if (isset($servicenew['counter_price'])) {
+                                  $counterPrice = $servicenew['counter_price'];
+                              } else {
+                                  // If counter price is not available, use the original service price
+                                  $counterPrice = $servicePrice;
+                              }
+                        ?>
+                            <li>
+                                <em><?php echo $services ?></em>
+                                <span style="color: #70BE44;">$<?php echo $counterPrice ?></span>
+                            </li>
+                        <?php } ?>
+                            <li class="custom-total-price">
+                                <em>Total Cost offer</em>
+                                <span style="color: #70BE44;">$<?php echo $displayTotal ?></span>
+                            </li>
                     </ul>
                   </div>
+
 
                 </div>
                 <div class="col-lg-1 mb-1 mb-lg-0"></div>
                 <div class="col-lg-6 mb-4 mb-lg-0">
                   <div class="task">
                     <h2>Task Description</h2>
-                    <p>I'm Stuck at Norway highway near Crown valley street,
-                      I have to wash & tint my car as soon as possible because
-                      of this extreme sunny weather. kindly come fast ASAP I'm
-                      waiting for you service. </p>
+                    <p><?php echo $userContent?></p>
                   </div>
                 </div>
               </div>
 
               <div class="row-second-inner">
-                <div id="panel">
+                <div class="panel content<?php echo $proposalId?> hidden">
                   <div class="gallery-servces moretext">
                     <h2>Service Place</h2>
                     <ul class="my-galleryserv">
-                      <li><img src="./images/hiring/gallery1.png" /></li>
-                      <li><img src="./images/hiring/gallery2.png" /></li>
-                      <li><img src="./images/hiring/gallery3.png" /></li>
-                      <li><img src="./images/hiring/gallery4.png" /></li>
+                    <?php
+                            foreach (array_slice($customerImages, 0, 5) as $imagePath) {
+                            ?>
+                                <li>
+                                    <img src="../customer/<?php echo $imagePath; ?>" alt="Customer Image" />
+                                </li>
+                            <?php
+                            }
+                            ?>
                     </ul>
                   </div>
                 </div>
 
-                <a id="flip" class="btn">Read More</a>
+                <a class="btn flip read-more-button<?php echo $proposalId?>">See More</a>
 
               </div>
 
@@ -178,184 +333,82 @@ include 'Black_logo_header.php'
 
           </div>
         </section>
+        <script>
+        const content<?php echo $proposalId ?> = document.querySelector('.content<?php echo $proposalId ?>');
+        const readMoreButton<?php echo $proposalId ?> = document.querySelector('.read-more-button<?php echo $proposalId ?>');
 
-
-        <section id="hiring" style="padding: 60px 0px;">
-          <div class="container">
-            <div class="hiring-inner">
-              <div class="row first-inner">
-                <div class="col-lg-3 mb-3 mb-lg-0">
-                  <div class="textwith-icon1">
-                    <img src="./images/hiring/hiring1.png" />
-                    <div class="text-inner">
-                      <h5>David Johnson</h5>
-                      <h6>Garden Maintenance</h6>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2">
-                    <i class="fa fa-check" aria-hidden="true"></i> 50+ Completed task
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2">
-                    <i class="fa fa-clock" aria-hidden="true"></i> 21, August,4:00 AM, SUN
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2 last-textinner">
-                    <ul class="button-sec">
-                      <li><a href="#">Cancel Service</a></li>
-                      <li><a href="#"><button>Scheduled</button></a></li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row second-inner">
-                <div class="col-lg-5 mb-8 mb-lg-0">
-                  <h2>Services Selected</h2>
-                  <div class="pricedetails">
-                    <ul>
-                      <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Snow Removal</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Grass Cutting</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li class="custom-total-price"><em>Total Cost offer</em> <span style="color: #70BE44;">$
-                          300.00</span></li>
-                    </ul>
-                  </div>
-
-                </div>
-                <div class="col-lg-1 mb-1 mb-lg-0"></div>
-                <div class="col-lg-6 mb-4 mb-lg-0">
-                  <div class="task">
-                    <h2>Task ss</h2>
-                    <p>I'm Stuck at Norway highway near Crown valley street,
-                      I have to wash & tint my car as soon as possible because
-                      of this extreme sunny weather. kindly come fast ASAP I'm
-                      waiting for you service. </p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row-second-inner">
-                <div id="panel">
-                  <div class="gallery-servces moretext">
-                    <h2>Service Place</h2>
-                    <ul class="my-galleryserv">
-                      <li><img src="./images/hiring/gallery1.png" /></li>
-                      <li><img src="./images/hiring/gallery2.png" /></li>
-                      <li><img src="./images/hiring/gallery3.png" /></li>
-                      <li><img src="./images/hiring/gallery4.png" /></li>
-                    </ul>
-                  </div>
-                </div>
-
-                <a id="flip" class="btn">Read More</a>
-
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-
-
-        <section id="hiring" style="padding: 60px 0px;">
-          <div class="container">
-            <div class="hiring-inner">
-              <div class="row first-inner">
-                <div class="col-lg-3 mb-3 mb-lg-0">
-                  <div class="textwith-icon1">
-                    <img src="./images/hiring/hiring1.png" />
-                    <div class="text-inner">
-                      <h5>David Johnson</h5>
-                      <h6>Garden Maintenance</h6>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2">
-                    <i class="fa fa-check" aria-hidden="true"></i> 50+ Completed task
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2">
-                    <i class="fa fa-clock" aria-hidden="true"></i> 21, August,4:00 AM, SUN
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2 last-textinner">
-                    <ul class="button-sec">
-                      <li><a href="#">Cancel Service</a></li>
-                      <li><a href="#"><button>Scheduled</button></a></li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row second-inner">
-                <div class="col-lg-5 mb-8 mb-lg-0">
-                  <h2>Services Selected</h2>
-                  <div class="pricedetails">
-                    <ul>
-                      <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Snow Removal</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Grass Cutting</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li class="custom-total-price"><em>Total Cost offer</em> <span style="color: #70BE44;">$
-                          300.00</span></li>
-                    </ul>
-                  </div>
-
-                </div>
-                <div class="col-lg-1 mb-1 mb-lg-0"></div>
-                <div class="col-lg-6 mb-4 mb-lg-0">
-                  <div class="task">
-                    <h2>Task Description</h2>
-                    <p>I'm Stuck at Norway highway near Crown valley street,
-                      I have to wash & tint my car as soon as possible because
-                      of this extreme sunny weather. kindly come fast ASAP I'm
-                      waiting for you service. </p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row-second-inner">
-                <div id="panel">
-                  <div class="gallery-servces moretext">
-                    <h2>Service Place</h2>
-                    <ul class="my-galleryserv">
-                      <li><img src="./images/hiring/gallery1.png" /></li>
-                      <li><img src="./images/hiring/gallery2.png" /></li>
-                      <li><img src="./images/hiring/gallery3.png" /></li>
-                      <li><img src="./images/hiring/gallery4.png" /></li>
-                    </ul>
-                  </div>
-                </div>
-
-                <a id="flip" class="btn">Read More</a>
-
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-        <!-- HIring Panel End -->
+        readMoreButton<?php echo $proposalId ?>.addEventListener('click', function () {
+            if (content<?php echo $proposalId ?>.classList.contains('hidden')) {
+                content<?php echo $proposalId ?>.classList.remove('hidden');
+                readMoreButton<?php echo $proposalId ?>.textContent = 'See Less';
+            } else {
+                content<?php echo $proposalId ?>.classList.add('hidden');
+                readMoreButton<?php echo $proposalId ?>.textContent = 'See More';
+            }
+        });
+    </script>
+        <?php
+     }
+    }
+} else {
+    echo 'Error executing the query.';
+}
+?>
+      <!-- HIring Panel End -->
       </div>
 
 
       <div class="tab-pane" id="tabs-2" role="tabpanel">
+      <?php
+              include 'connection.php';
+
+              $userId = $_SESSION['user_id'];
+
+              $sql = "SELECT * FROM customer_proposal WHERE customer_id = ? AND status = 'new_offer'";
+              $stmt = $conn->prepare($sql);
+              $stmt->bind_param('s', $userId);
+
+              if ($stmt->execute()) {
+                  $result = $stmt->get_result();
+                  if ($result->num_rows == 0) {
+                    // No orders found for the provider
+                    echo '<h2 class="text-center texter">No new orders available.</h2>';
+                } else {
+            while ($row = $result->fetch_assoc()) {
+                $proposalId = $row['id'];
+                $customerId = $row['customer_id'];
+                $providerId = $row['provider_id'];
+                $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+                $selectedTime = $row['selected_time'];
+                $userContent = $row['user_content'];
+                $selectedServices = explode(', ', $row['selected_services']);
+                $totalAmount = $row['total_amount'];
+                $current_time = $row['current_time'];
+
+                // Retrieve customer name and address based on customerId
+                $customerInfo = getCustomerInfo($providerId);
+
+                $customerImages = getCustomerImagesForProvider($providerId, $proposalId, $customerId);
+                $serviceCustomers = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                $serviceCustomers1 = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                
+                
+                // Now you have an array containing the selected services and their prices for the customer
+                
+                // Output the retrieved customer name and address
+                $customerName = $customerInfo['fullname'];
+                $customerAddress = $customerInfo['address'];
+                $profile_picture = $customerInfo['profile_picture'];
+            ?>
         <section id="hiring" style="padding: 60px 0px;">
           <div class="container">
             <div class="hiring-inner">
               <div class="row first-inner">
                 <div class="col-lg-3 mb-3 mb-lg-0">
                   <div class="textwith-icon1">
-                    <img src="./images/hiring/hiring1.png" />
+                    <img src="../provider/<?php echo $profile_picture?>" />
                     <div class="text-inner">
-                      <h5>David Johnson</h5>
+                      <h5><?php echo $customerName?></h5>
                       <h6>Garden Maintenance</h6>
                       <a href="message.php"><button class="messagebutton"
                           style="background-color: #70BE44; color: #fff;">Message Provider</button></a>
@@ -387,11 +440,16 @@ include 'Black_logo_header.php'
                   <h2>Services Selected</h2>
                   <div class="pricedetails">
                     <ul>
-                      <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Snow Removal</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Grass Cutting</em> <span style="color: #70BE44;">$ 100.00</span></li>
+                    <?php foreach ($serviceCustomers as $servicenew) {
+                            $services = $servicenew['service_name'];
+                            $servicePrice = $servicenew['price'];
+                            // echo $serviceCustomers; echo "<br/>";
+                            // echo $servicePrice;echo "<br/>";
+                          ?>
+                      <li><em><?php echo  $services?></em> <span style="color: #70BE44;">$ <?php echo  $servicePrice?></span></li>
+                      <?php } ?>
                       <li class="custom-total-price"><em>Total Cost offer</em> <span style="color: #70BE44;">$
-                          300.00</span></li>
+                          <?php echo $totalAmount?></span></li>
                     </ul>
                   </div>
 
@@ -400,28 +458,30 @@ include 'Black_logo_header.php'
                 <div class="col-lg-6 mb-4 mb-lg-0">
                   <div class="task">
                     <h2>Task Description</h2>
-                    <p>I'm Stuck at Norway highway near Crown valley street,
-                      I have to wash & tint my car as soon as possible because
-                      of this extreme sunny weather. kindly come fast ASAP I'm
-                      waiting for you service. </p>
+                    <p><?php echo $userContent?></p>
                   </div>
                 </div>
               </div>
 
               <div class="row-second-inner">
-                <div id="panel">
+                <div class="panel content<?php echo $proposalId?> hidden">
                   <div class="gallery-servces moretext">
                     <h2>Service Place</h2>
                     <ul class="my-galleryserv">
-                      <li><img src="./images/hiring/gallery1.png" /></li>
-                      <li><img src="./images/hiring/gallery2.png" /></li>
-                      <li><img src="./images/hiring/gallery3.png" /></li>
-                      <li><img src="./images/hiring/gallery4.png" /></li>
+                    <?php
+                            foreach (array_slice($customerImages, 0, 5) as $imagePath) {
+                            ?>
+                                <li>
+                                    <img src="../customer/<?php echo $imagePath; ?>" alt="Customer Image" />
+                                </li>
+                            <?php
+                            }
+                            ?>
                     </ul>
                   </div>
                 </div>
 
-                <a id="flip" class="btn">Read More</a>
+                <a class="btn flip read-more-button<?php echo $proposalId?>">See More</a>
 
               </div>
 
@@ -430,184 +490,86 @@ include 'Black_logo_header.php'
           </div>
         </section>
 
+        <script>
+        const content<?php echo $proposalId ?> = document.querySelector('.content<?php echo $proposalId ?>');
+        const readMoreButton<?php echo $proposalId ?> = document.querySelector('.read-more-button<?php echo $proposalId ?>');
 
-        <section id="hiring" style="padding: 60px 0px;">
-          <div class="container">
-            <div class="hiring-inner">
-              <div class="row first-inner">
-                <div class="col-lg-3 mb-3 mb-lg-0">
-                  <div class="textwith-icon1">
-                    <img src="./images/hiring/hiring1.png" />
-                    <div class="text-inner">
-                      <h5>David Johnson</h5>
-                      <h6>Garden Maintenance</h6>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2">
-                    <p><img src="./images/strr.png" />4.9</p>
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2">
-
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2 last-textinner">
-                    <ul class="button-sec">
-                      <li><a href="#">Verify</a></li>
-                      <li class="arrive1d"><a href="#"><button>Arrived</button></a></li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row second-inner">
-                <div class="col-lg-5 mb-8 mb-lg-0">
-                  <h2>Services Selected</h2>
-                  <div class="pricedetails">
-                    <ul>
-                      <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Snow Removal</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Grass Cutting</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li class="custom-total-price"><em>Total Cost offer</em> <span style="color: #70BE44;">$
-                          300.00</span></li>
-                    </ul>
-                  </div>
-
-                </div>
-                <div class="col-lg-1 mb-1 mb-lg-0"></div>
-                <div class="col-lg-6 mb-4 mb-lg-0">
-                  <div class="task">
-                    <h2>Task Description</h2>
-                    <p>I'm Stuck at Norway highway near Crown valley street,
-                      I have to wash & tint my car as soon as possible because
-                      of this extreme sunny weather. kindly come fast ASAP I'm
-                      waiting for you service. </p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row-second-inner">
-                <div id="panel">
-                  <div class="gallery-servces moretext">
-                    <h2>Service Place</h2>
-                    <ul class="my-galleryserv">
-                      <li><img src="./images/hiring/gallery1.png" /></li>
-                      <li><img src="./images/hiring/gallery2.png" /></li>
-                      <li><img src="./images/hiring/gallery3.png" /></li>
-                      <li><img src="./images/hiring/gallery4.png" /></li>
-                    </ul>
-                  </div>
-                </div>
-
-                <a id="flip" class="btn">Read More</a>
-
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-
-
-        <section id="hiring" style="padding: 60px 0px;">
-          <div class="container">
-            <div class="hiring-inner">
-              <div class="row first-inner">
-                <div class="col-lg-3 mb-3 mb-lg-0">
-                  <div class="textwith-icon1">
-                    <img src="./images/hiring/hiring1.png" />
-                    <div class="text-inner">
-                      <h5>David Johnson</h5>
-                      <h6>Garden Maintenance</h6>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2">
-                    <p><img src="./images/strr.png" />4.9</p>
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2">
-
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2 last-textinner">
-                    <ul class="button-sec">
-                      <li><a href="#">Verify</a></li>
-                      <li class="arrive1d"><a href="#"><button>Arrived</button></a></li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row second-inner">
-                <div class="col-lg-5 mb-8 mb-lg-0">
-                  <h2>Services Selected</h2>
-                  <div class="pricedetails">
-                    <ul>
-                      <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Snow Removal</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Grass Cutting</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li class="custom-total-price"><em>Total Cost offer</em> <span style="color: #70BE44;">$
-                          300.00</span></li>
-                    </ul>
-                  </div>
-
-                </div>
-                <div class="col-lg-1 mb-1 mb-lg-0"></div>
-                <div class="col-lg-6 mb-4 mb-lg-0">
-                  <div class="task">
-                    <h2>Task Description</h2>
-                    <p>I'm Stuck at Norway highway near Crown valley street,
-                      I have to wash & tint my car as soon as possible because
-                      of this extreme sunny weather. kindly come fast ASAP I'm
-                      waiting for you service. </p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row-second-inner">
-                <div id="panel">
-                  <div class="gallery-servces moretext">
-                    <h2>Service Place</h2>
-                    <ul class="my-galleryserv">
-                      <li><img src="./images/hiring/gallery1.png" /></li>
-                      <li><img src="./images/hiring/gallery2.png" /></li>
-                      <li><img src="./images/hiring/gallery3.png" /></li>
-                      <li><img src="./images/hiring/gallery4.png" /></li>
-                    </ul>
-                  </div>
-                </div>
-
-                <a id="flip" class="btn">Read More</a>
-
-              </div>
-
-            </div>
-
-          </div>
-        </section>
+        readMoreButton<?php echo $proposalId ?>.addEventListener('click', function () {
+            if (content<?php echo $proposalId ?>.classList.contains('hidden')) {
+                content<?php echo $proposalId ?>.classList.remove('hidden');
+                readMoreButton<?php echo $proposalId ?>.textContent = 'See Less';
+            } else {
+                content<?php echo $proposalId ?>.classList.add('hidden');
+                readMoreButton<?php echo $proposalId ?>.textContent = 'See More';
+            }
+        });
+    </script>
+        <?php
+     }
+    }
+} else {
+    echo 'Error executing the query.';
+}
+?>
+       
       </div>
 
 
 
       <div class="tab-pane" id="tabs-3" role="tabpanel">
+      <?php
+              include 'connection.php';
+
+              $userId = $_SESSION['user_id'];
+
+              $sql = "SELECT * FROM customer_proposal WHERE customer_id = ? AND status = 'order_in_progress'";
+              $stmt = $conn->prepare($sql);
+              $stmt->bind_param('s', $userId);
+
+              if ($stmt->execute()) {
+                  $result = $stmt->get_result();
+                  if ($result->num_rows == 0) {
+                    // No orders found for the provider
+                    echo '<h2 class="text-center texter">No new orders available.</h2>';
+                } else {
+            while ($row = $result->fetch_assoc()) {
+                $proposalId = $row['id'];
+                $customerId = $row['customer_id'];
+                $providerId = $row['provider_id'];
+                $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+                $selectedTime = $row['selected_time'];
+                $userContent = $row['user_content'];
+                $selectedServices = explode(', ', $row['selected_services']);
+                $totalAmount = $row['total_amount'];
+                $current_time = $row['current_time'];
+
+                // Retrieve customer name and address based on customerId
+                $customerInfo = getCustomerInfo($providerId);
+
+                $customerImages = getCustomerImagesForProvider($providerId, $proposalId, $customerId);
+                $serviceCustomers = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                $serviceCustomers1 = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                
+                
+                // Now you have an array containing the selected services and their prices for the customer
+                
+                // Output the retrieved customer name and address
+                $customerName = $customerInfo['fullname'];
+                $customerAddress = $customerInfo['address'];
+                $profile_picture = $customerInfo['profile_picture'];
+            ?>
         <section id="hiring" style="padding: 60px 0px;">
           <div class="container">
             <div class="hiring-inner">
               <div class="row first-inner">
                 <div class="col-lg-3 mb-3 mb-lg-0">
                   <div class="textwith-icon1">
-                    <img src="./images/hiring/hiring1.png" />
+                    <img src="../provider/<?php echo $profile_picture?>" />
                     <div class="text-inner">
-                      <h5>David Johnson</h5>
+                      <h5><?php echo $customerName?></h5>
                       <h6>Garden Maintenance</h6>
+                      <a href="message.php"><button class="messagebutton"
+                          style="background-color: #70BE44; color: #fff;">Message Provider</button></a>
                     </div>
                   </div>
                 </div>
@@ -624,8 +586,8 @@ include 'Black_logo_header.php'
                 <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
                   <div class="textwith-icon2 last-textinner">
                     <ul class="button-sec">
-                      <li><a style="color: #70BE44;" href="#">Verify</a></li>
-                      <li class="completed"><a href="#"><button>Completed</button></a></li>
+                      <li><a href="#">Verify</a></li>
+                      <li class="arrive1d"><a href="#"><button>Arrived</button></a></li>
                     </ul>
                   </div>
                 </div>
@@ -636,11 +598,16 @@ include 'Black_logo_header.php'
                   <h2>Services Selected</h2>
                   <div class="pricedetails">
                     <ul>
-                      <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Snow Removal</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Grass Cutting</em> <span style="color: #70BE44;">$ 100.00</span></li>
+                    <?php foreach ($serviceCustomers as $servicenew) {
+                            $services = $servicenew['service_name'];
+                            $servicePrice = $servicenew['price'];
+                            // echo $serviceCustomers; echo "<br/>";
+                            // echo $servicePrice;echo "<br/>";
+                          ?>
+                      <li><em><?php echo  $services?></em> <span style="color: #70BE44;">$ <?php echo  $servicePrice?></span></li>
+                      <?php } ?>
                       <li class="custom-total-price"><em>Total Cost offer</em> <span style="color: #70BE44;">$
-                          300.00</span></li>
+                          <?php echo $totalAmount?></span></li>
                     </ul>
                   </div>
 
@@ -649,28 +616,30 @@ include 'Black_logo_header.php'
                 <div class="col-lg-6 mb-4 mb-lg-0">
                   <div class="task">
                     <h2>Task Description</h2>
-                    <p>I'm Stuck at Norway highway near Crown valley street,
-                      I have to wash & tint my car as soon as possible because
-                      of this extreme sunny weather. kindly come fast ASAP I'm
-                      waiting for you service. </p>
+                    <p><?php echo $userContent?></p>
                   </div>
                 </div>
               </div>
 
               <div class="row-second-inner">
-                <div id="panel">
+                <div class="panel content<?php echo $proposalId?> hidden">
                   <div class="gallery-servces moretext">
                     <h2>Service Place</h2>
                     <ul class="my-galleryserv">
-                      <li><img src="./images/hiring/gallery1.png" /></li>
-                      <li><img src="./images/hiring/gallery2.png" /></li>
-                      <li><img src="./images/hiring/gallery3.png" /></li>
-                      <li><img src="./images/hiring/gallery4.png" /></li>
+                    <?php
+                            foreach (array_slice($customerImages, 0, 5) as $imagePath) {
+                            ?>
+                                <li>
+                                    <img src="../customer/<?php echo $imagePath; ?>" alt="Customer Image" />
+                                </li>
+                            <?php
+                            }
+                            ?>
                     </ul>
                   </div>
                 </div>
 
-                <a id="flip" class="btn">Read More</a>
+                <a class="btn flip read-more-button<?php echo $proposalId?>">See More</a>
 
               </div>
 
@@ -679,175 +648,30 @@ include 'Black_logo_header.php'
           </div>
         </section>
 
+        <script>
+        const content<?php echo $proposalId ?> = document.querySelector('.content<?php echo $proposalId ?>');
+        const readMoreButton<?php echo $proposalId ?> = document.querySelector('.read-more-button<?php echo $proposalId ?>');
 
-        <section id="hiring" style="padding: 60px 0px;">
-          <div class="container">
-            <div class="hiring-inner">
-              <div class="row first-inner">
-                <div class="col-lg-3 mb-3 mb-lg-0">
-                  <div class="textwith-icon1">
-                    <img src="./images/hiring/hiring1.png" />
-                    <div class="text-inner">
-                      <h5>David Johnson</h5>
-                      <h6>Garden Maintenance</h6>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2">
-                    <p><img src="./images/strr.png" />4.9</p>
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2">
-
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2 last-textinner">
-                    <ul class="button-sec">
-
-                      <li class="working"><a href="#"><button>Working</button></a></li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row second-inner">
-                <div class="col-lg-5 mb-8 mb-lg-0">
-                  <h2>Services Selected</h2>
-                  <div class="pricedetails">
-                    <ul>
-                      <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Snow Removal</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Grass Cutting</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li class="custom-total-price"><em>Total Cost offer</em> <span style="color: #70BE44;">$
-                          300.00</span></li>
-                    </ul>
-                  </div>
-
-                </div>
-                <div class="col-lg-1 mb-1 mb-lg-0"></div>
-                <div class="col-lg-6 mb-4 mb-lg-0">
-                  <div class="task">
-                    <h2>Task Description</h2>
-                    <p>I'm Stuck at Norway highway near Crown valley street,
-                      I have to wash & tint my car as soon as possible because
-                      of this extreme sunny weather. kindly come fast ASAP I'm
-                      waiting for you service. </p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row-second-inner">
-                <div id="panel">
-                  <div class="gallery-servces moretext">
-                    <h2>Service Place</h2>
-                    <ul class="my-galleryserv">
-                      <li><img src="./images/hiring/gallery1.png" /></li>
-                      <li><img src="./images/hiring/gallery2.png" /></li>
-                      <li><img src="./images/hiring/gallery3.png" /></li>
-                      <li><img src="./images/hiring/gallery4.png" /></li>
-                    </ul>
-                  </div>
-                </div>
-
-                <a id="flip" class="btn">Read More</a>
-
-              </div>
-
-            </div>
-
-          </div>
-        </section>
+        readMoreButton<?php echo $proposalId ?>.addEventListener('click', function () {
+            if (content<?php echo $proposalId ?>.classList.contains('hidden')) {
+                content<?php echo $proposalId ?>.classList.remove('hidden');
+                readMoreButton<?php echo $proposalId ?>.textContent = 'See Less';
+            } else {
+                content<?php echo $proposalId ?>.classList.add('hidden');
+                readMoreButton<?php echo $proposalId ?>.textContent = 'See More';
+            }
+        });
+    </script>
+        <?php
+     }
+    }
+} else {
+    echo 'Error executing the query.';
+}
+?>
 
 
-
-
-        <section id="hiring" style="padding: 60px 0px;">
-          <div class="container">
-            <div class="hiring-inner">
-              <div class="row first-inner">
-                <div class="col-lg-3 mb-3 mb-lg-0">
-                  <div class="textwith-icon1">
-                    <img src="./images/hiring/hiring1.png" />
-                    <div class="text-inner">
-                      <h5>David Johnson</h5>
-                      <h6>Garden Maintenance</h6>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2">
-                    <p><img src="./images/strr.png" />4.9</p>
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2">
-
-                  </div>
-                </div>
-                <div class="col-lg-3 mb-3 mb-lg-0 align-self-center">
-                  <div class="textwith-icon2 last-textinner">
-                    <ul class="button-sec">
-
-                      <li class="working"><a href="#"><button>Working</button></a></li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row second-inner">
-                <div class="col-lg-5 mb-8 mb-lg-0">
-                  <h2>Services Selected</h2>
-                  <div class="pricedetails">
-                    <ul>
-                      <li><em>Lawn mowing</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Snow Removal</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li><em>Grass Cutting</em> <span style="color: #70BE44;">$ 100.00</span></li>
-                      <li class="custom-total-price"><em>Total Cost offer</em> <span style="color: #70BE44;">$
-                          300.00</span></li>
-                    </ul>
-                  </div>
-
-                </div>
-                <div class="col-lg-1 mb-1 mb-lg-0"></div>
-                <div class="col-lg-6 mb-4 mb-lg-0">
-                  <div class="task">
-                    <h2>Task Description</h2>
-                    <p>I'm Stuck at Norway highway near Crown valley street,
-                      I have to wash & tint my car as soon as possible because
-                      of this extreme sunny weather. kindly come fast ASAP I'm
-                      waiting for you service. </p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row-second-inner">
-                <div id="panel">
-                  <div class="gallery-servces moretext">
-                    <h2>Service Place</h2>
-                    <ul class="my-galleryserv">
-                      <li><img src="./images/hiring/gallery1.png" /></li>
-                      <li><img src="./images/hiring/gallery2.png" /></li>
-                      <li><img src="./images/hiring/gallery3.png" /></li>
-                      <li><img src="./images/hiring/gallery4.png" /></li>
-                    </ul>
-                  </div>
-                </div>
-
-                <a id="flip" class="btn">Read More</a>
-
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-
-
-
-
+       
       </div>
 
       <div class="tab-pane rteserves" id="tabs-4" role="tabpanel">
@@ -1270,7 +1094,7 @@ include 'Black_logo_header.php'
   });
 
 </script>
-<script>
+<!-- <script>
   //to change text
   $('a#flip').click(function () {
 
@@ -1290,4 +1114,4 @@ include 'Black_logo_header.php'
       $("#panel").slideToggle("slow");
     });
   });
-</script>
+</script> -->

@@ -1,6 +1,99 @@
 <?php
 session_start();
+// Function to get customer information from the provider_registration table
+function getCustomerInfo($providerId) {
+  global $conn;
+  $sql = "SELECT fullname, profile_picture, address FROM provider_registration WHERE id = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param('s', $providerId);
+  if ($stmt->execute()) {
+      $result = $stmt->get_result();
+      if ($result->num_rows > 0) {
+          $row = $result->fetch_assoc();
+          return $row;
+      }
+  }
+  return array('fullname' => 'N/A', 'address' => 'N/A', 'profile_picture' => 'N/A'); // Provide default values if customer info not found
+}
+// Function to get the price of a service from the categories table
+function getCustomerServicesAndPrices($providerId, $proposalId, $userId) {
+    global $conn;
+    $sql = "SELECT service_name, price, counter_price, counter_note FROM customer_services WHERE provider_id = ? AND proposal_id = ? AND customer_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('sss', $providerId, $proposalId, $userId);
 
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        $servicesAndPrices = array();
+
+        while ($row = $result->fetch_assoc()) {
+            $serviceCustomers = $row['service_name'];
+            $priceService = $row['price'];
+            $counterPrice = $row['counter_price'];
+            $counterNote = $row['counter_note'];
+            $servicesAndPrices[] = array('service_name' => $serviceCustomers, 'price' => $priceService, 'counter_price' => $counterPrice, 'counter_note' => $counterNote);
+            // print_r($servicesAndPrices);
+        }
+
+        return $servicesAndPrices;
+    }
+
+    return array();
+}
+function getServicePrice($service) {
+    global $conn;
+    $sql = "SELECT price FROM customer_services WHERE service_name = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('s', $service);
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row['price'];
+        }
+    }
+    return 'N/A'; // Provide a default value if service price not found
+  }
+  function getCustomerImagesForProvider($providerId, $proposalId, $customerId) {
+    global $conn;
+    $sql = "SELECT image_path FROM customer_images WHERE provider_id = ? AND proposal_id = ? AND customer_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('sss', $providerId, $proposalId, $customerId);
+    if ($stmt->execute()) {
+      $result = $stmt->get_result();
+      $images = array();
+      while ($row = $result->fetch_assoc()) {
+        $images[] = $row['image_path'];
+      }
+      return $images;
+    }
+    return array();
+  }
+
+
+function getServiceImages($service) {
+  global $conn;
+  $servicesImages = array();
+
+  // Create a prepared statement to select servicesImages based on service names
+  $sql = "SELECT image FROM categories WHERE heading IN (?)";
+  $stmt = $conn->prepare($sql);
+
+  if ($stmt) {
+      $categories = implode("', '", $service); // Assuming service names are in an array
+      $stmt->bind_param('s', $categories);
+
+      if ($stmt->execute()) {
+          $result = $stmt->get_result();
+
+          while ($row = $result->fetch_assoc()) {
+              $servicesImages[] = $row['image'];
+          }
+      }
+  }
+
+  return $servicesImages;
+}
 ?>
 <!DOCTYPE html>
 <html lang="zxx" class="my-offer">
@@ -46,36 +139,7 @@ session_start();
 <body class="services-page">
   
 
-    <header class="navigation fixed-top">
-        <nav class="navbar navbar-expand-lg navbar-dark">
-          <a class="navbar-brand" href="index.php"><img src="images/signup/sitelogo-singup.png" alt="Egen"></a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navigation"
-            aria-controls="navigation" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-      
-          <div class="collapse navbar-collapse text-center" id="navigation">
-            <ul class="navbar-nav ml-auto">
-              <li class="nav-item active">
-                <a class="nav-link" href="index.php">Home</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="services.php">Services</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="notifications.php">Notifications</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="myhirings.php">My Hirings</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="provider.php">Provider</a>
-              </li> 
-            </ul>
-          </div>
-        </nav>
-      </header>
-
+  <?php include 'Black_logo_header.php';?>
 <!-- Section start -->
 <section id="my-offers-main">
 <div class="container">
@@ -87,7 +151,7 @@ session_start();
     </div>
     <div class="myoffer-button-serv">
         <ul>
-            <li><a href="#"><button style="background-color: #70BE44; font-family: Cairo;
+            <li><a href="myoffers.php"><button style="background-color: #70BE44; font-family: Cairo;
                 font-size: 30px;
                 font-weight: 600;
                 line-height: 56px;
@@ -95,7 +159,7 @@ session_start();
                 text-align: left;
                 color: #FFFFFF;
                 ">One Time Service</button></a></li>
-            <li><a href="#"><button style="background-color: #E6E6E6; font-family: Cairo;
+            <li><a href="myrecurrings.php"><button style="background-color: #E6E6E6; font-family: Cairo;
                 font-size: 30px;
                 font-weight: 600;
                 line-height: 56px;
@@ -122,267 +186,533 @@ session_start();
         <div class="tab-content">
             <div class="tab-pane active" id="tabs-1" role="tabpanel">
                 <!-- SECOND OFFER ONETIME START -->
-               <div class="my-offers onetime" style="margin-bottom: 40px;">
+                
+                <?php
+              include 'connection.php';
+              
+              $userId = $_SESSION['user_id'];
 
-                <!-- MY OFR PROFILE INFO START -->
-                                   <div class="my-ofr-profl-info">
-                
-                                    <div class="row">
-                                        <div class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                            <div class="prf-imgwithtext">
-                                                <img src="./images/hiring/hiring1.png"/>
-                                               <h2> David Johnson</h2>
-                                               <p>Garden Maintenance</p>
-                                            </div>
-                                        </div>
-                
-                                        <div style="text-align: right;" class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                            <h5 class="pending"><span style="background-color: #70BE44;">Replied</span></h5>
-                                            <h6 style="color: #72B763;">Offered On 22,August,2022</h6>
-                                        </div>
-                                    </div>
-                
-                                    <div class="row bio-myoffer onetimepayment repliedoffer" style="padding-top: 30px;">
-                                        <div class="col-lg-6 mb-3 mb-lg-0">
-                                            <h4 style="padding-bottom: 30px;">Counter Offer</h4>
-                                            <p><em><img src="./images/providerselected/Snow Plow.png"/> Snow Removal</em><span>$300</span></p>
-                                            <p><em><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</em><span>$300</span></p>
-                                            <p><em><img src="./images/providerselected/Grass.png"/> Grass Cutting</em><span>$300</span></p>
-                                            <div class="totalselected">
-                                                <ul>
-                                                <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$300</span></li></ul>
-                                              </div>
-                                        </div>
-                                        <div class="col-lg-6 mb-3 mb-lg-0" style="padding-left: 30px;">
-                                           
-                                            <div class="custom-bookingtime">
-                                                <h4 style="padding-bottom: 10px;">Counter Booking Timings</h4>
-                                                <ul>
-                                                    <li><em>29-June-2023 , MON</em><span>10 am -12 am</span></li>
-                                                </ul>
-                                            </div>
-                                            <h4 style="padding-bottom: 30px;">Task Description</h4>
-                                            <p class="onetimepara">I'm Stuck at Norway highway near Crown valley street, I 
-                                                have to wash & tint my car as soon as possible because 
-                                                of this extreme sunny weather. kindly come fast ASAP 
-                                                I'm waiting for your service. </p>
-                                        </div>
-                                        <div class="row viewimages-onetime">
-                                            <a href="#"><button>View All</button></a>
-                                        </div>
-                                    </div>
-                
-                
-                                   </div>
-                
-                
-                
-                                </div>
-            <!-- SECOND OFFER ONETIME END -->
-            <!-- SECOND OFFER ONETIME START -->
-            <div class="my-offers onetime" style="margin-bottom: 40px;">
+              $sql = "SELECT * FROM customer_proposal WHERE customer_id = ? AND status = 'new_offer'";
+              $stmt = $conn->prepare($sql);
+              $stmt->bind_param('s', $userId);
 
-                <!-- MY OFR PROFILE INFO START -->
-                                   <div class="my-ofr-profl-info">
+              if ($stmt->execute()) {
+                  $result = $stmt->get_result();
+                  if ($result->num_rows == 0) {
+                    // No orders found for the provider
+                    echo '<h2 class="text-center texter">No New orders available.</h2>';
+                } else {
+            while ($row = $result->fetch_assoc()) {
+                $proposalId = $row['id'];
+                $customerId = $row['customer_id'];
+                $providerId = $row['provider_id'];
+                $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+                $selectedTime = $row['selected_time'];
+                $userContent = $row['user_content'];
+                $selectedServices = explode(', ', $row['selected_services']);
+                $totalAmount = $row['total_amount'];
+                $counterTotall = $row['counter_totall'];
+                $current_time = $row['current_time'];
+
+                // Retrieve customer name and address based on customerId
+                $customerInfo = getCustomerInfo($providerId);
+
+                $customerImages = getCustomerImagesForProvider($providerId, $proposalId, $customerId);
+                $serviceCustomers = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                $serviceCustomers1 = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
                 
-                                    <div class="row">
-                                        <div class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                            <div class="prf-imgwithtext">
-                                                <img src="./images/hiring/hiring1.png"/>
-                                               <h2> David Johnson</h2>
-                                               <p>Garden Maintenance</p>
-                                            </div>
-                                        </div>
+                // $counterTotall = $serviceCustomers1['counter_totall'];
+
+                // Now you have an array containing the selected services and their prices for the customer
                 
-                                        <div style="text-align: right;" class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                            <h5 class="pending"><span style="background-color: #70BE44;">Replied</span></h5>
-                                            <h6 style="color: #72B763;">Offered On 22,August,2022</h6>
-                                        </div>
-                                    </div>
-                
-                                    <div class="row bio-myoffer onetimepayment repliedoffer" style="padding-top: 30px;">
-                                        <div class="col-lg-6 mb-3 mb-lg-0">
-                                            <h4 style="padding-bottom: 30px;">Counter Offer</h4>
-                                            <p><em><img src="./images/providerselected/Snow Plow.png"/> Snow Removal</em><span>$300</span></p>
-                                            <p><em><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</em><span>$300</span></p>
-                                            <p><em><img src="./images/providerselected/Grass.png"/> Grass Cutting</em><span>$300</span></p>
-                                            <div class="totalselected">
-                                                <ul>
-                                                <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$300</span></li></ul>
-                                              </div>
-                                        </div>
-                                        <div class="col-lg-6 mb-3 mb-lg-0" style="padding-left: 30px;">
-                                           
-                                            <div class="custom-bookingtime">
-                                                <h4 style="padding-bottom: 10px;">Counter Booking Timings</h4>
-                                                <ul>
-                                                    <li><em>29-June-2023 , MON</em><span>10 am -12 am</span></li>
-                                                </ul>
-                                            </div>
-                                            <h4 style="padding-bottom: 30px;">Task Description</h4>
-                                            <p class="onetimepara">I'm Stuck at Norway highway near Crown valley street, I 
-                                                have to wash & tint my car as soon as possible because 
-                                                of this extreme sunny weather. kindly come fast ASAP 
-                                                I'm waiting for your service. </p>
-                                        </div>
-                                        <div class="row viewimages-onetime">
-                                            <a href="#"><button>View All</button></a>
-                                        </div>
-                                    </div>
-                
-                
-                                   </div>
-                
-                
-                
-                                </div>
-            <!-- SECOND OFFER ONETIME END -->
-          
+                // Output the retrieved customer name and address
+                $customerName = $customerInfo['fullname'];
+                $customerAddress = $customerInfo['address'];
+                $profile_picture = $customerInfo['profile_picture'];
+            ?>
                 <div class="my-offers onetime" style="margin-bottom: 40px;">
+                    <div class="my-ofr-profl-info">
 
+                        <div class="row">
+                            <div class="col-lg-6 mb-3 mb-lg-0 align-self-center">
+                                <div class="prf-imgwithtext">
+                                <img src="../provider/<?php echo $profile_picture ?>"/>
+                                <h2> <?php echo $customerName?></h2>
+                                <p>Garden Maintenance</p>
+                                </div>
+                            </div>
+
+                            <div style="text-align: right;" class="col-lg-6 mb-3 mb-lg-0 align-self-center">
+                                <h5 class="pending"><span>Pending</span></h5>
+                                <h6 style="color: #72B763;">Offered On <?php echo $current_time ?></h6>
+                            </div>
+                        </div>
+
+                        <div class="row bio-myoffer onetimepayment" style="padding-top: 30px;">
+                            <div class="col-lg-6 mb-3 mb-lg-0">
+                                <h4 style="padding-bottom: 30px;">Service Cost Offer</h4>
+                                <?php
+                                    $platformChargesPercentage = 10;
+
+                                    $platformCharges = ($totalAmount * $platformChargesPercentage) / 100;
+
+                                    $amountYouWillEarn = $totalAmount - $platformCharges;
+
+                                    $serviceCustomers1Index = 0;
+
+                                    $counter = 1;
+                                    foreach ($selectedServices as $service) {
+                                        // $displayTotal = isset($counterTotall) ? $counterTotall : $totalAmount;
+                                        $serviceImages = getServiceImages([$service]);
+                                        $serviceCustomers1Item = $serviceCustomers1[$serviceCustomers1Index];
+
+                                        $servicesNew = $serviceCustomers1Item['service_name'];
+                                        $servicePrice = $serviceCustomers1Item['price'];
+                                        // $counterNote = $serviceCustomers1Item['counter_note'];
+
+                                        $serviceCustomers1Index++;
+                                        ?>
+                                        <p style="
+                                                display: flex;
+                                                justify-content: space-between;
+                                                align-items: center;
+                                            ">
+                                            <em>
+                                                <?php 
+                                                foreach ($serviceImages as $imagePath) {
+                                                    ?>
+                                                    <img src="../admin/uploads/<?php echo $imagePath ?>" alt="Service Image" /><?php echo $servicesNew ?>
+                                                <?php $counter++; } ?>
+                                            </em>
+                                            <span>$<?php echo $servicePrice ?></span>
+                                        </p>
+                                                
+                                    <?php 
+                                    $counter++; } 
+                                ?>
+                                <!-- <p><em><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</em><span>$300</span></p>
+                                <p><em><img src="./images/providerselected/Grass.png"/> Grass Cutting</em><span>$300</span></p> -->
+                                <div class="totalselected">
+                                    <ul>
+                                        <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$ <?php echo $totalAmount?></span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 mb-3 mb-lg-0" style="padding-left: 30px;">
+                            
+                                <div class="custom-bookingtime">
+                                    <h4 style="padding-bottom: 10px;">Booking Time</h4>
+                                    <ul>
+                                        <li><em><?php echo $selectedDate?></em><span><?php echo $selectedTime?></span></li>
+                                    </ul>
+                                </div>
+                                <h4 style="padding-bottom: 30px;">Task Description</h4>
+                                <p class="onetimepara"><?php echo $userContent?></p>
+                            </div>
+                            <div class="col-lg-12 mt-4">
+                                <div class="content<?php echo $proposalId?> hidden">
+                                    <div class="gallery-servces moretext" style="text-align:center;">
+                                        <h2>Service Place</h2>
+                                        <ul class="my-galleryserv" style="display:flex; justify-content:center;">
+                                            <?php
+                                                foreach (array_slice($customerImages, 0, 5) as $imagePath) {
+                                                ?>
+                                                    <li>
+                                                        <img src="../customer/<?php echo $imagePath; ?>" alt="Customer Image" />
+                                                    </li>
+                                                <?php
+                                                }
+                                            ?>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row viewimages-onetime">
+                                <button class="read-more-button<?php echo $proposalId?>">See More</button>
+                            </div>
+                                <!-- <a href="#"><button>View Images</button></a> -->
+                            
+                        </div>
+
+
+                    </div>
+                </div>
+                
+                <script>
+                    const content<?php echo $proposalId ?> = document.querySelector('.content<?php echo $proposalId ?>');
+                    const readMoreButton<?php echo $proposalId ?> = document.querySelector('.read-more-button<?php echo $proposalId ?>');
+
+                    readMoreButton<?php echo $proposalId ?>.addEventListener('click', function () {
+                        if (content<?php echo $proposalId ?>.classList.contains('hidden')) {
+                            content<?php echo $proposalId ?>.classList.remove('hidden');
+                            readMoreButton<?php echo $proposalId ?>.textContent = 'See Less';
+                        } else {
+                            content<?php echo $proposalId ?>.classList.add('hidden');
+                            readMoreButton<?php echo $proposalId ?>.textContent = 'See More';
+                        }
+                    });
+                </script>
+                <?php
+     }
+    }
+} else {
+    echo 'Error executing the query.';
+}
+?>
+            <?php
+              include 'connection.php';
+
+              $userId = $_SESSION['user_id'];
+              $customerFullName = $_SESSION['customerFullName'];
+
+              $sql = "SELECT * FROM customer_proposal WHERE customer_id = ? AND status = 'replied_offer'";
+              $stmt = $conn->prepare($sql);
+              $stmt->bind_param('s', $userId);
+
+              if ($stmt->execute()) {
+                  $result = $stmt->get_result();
+                  if ($result->num_rows == 0) {
+                    echo '<h2 class="text-center texter">No Replied orders available.</h2>';
+                } else {
+            while ($row = $result->fetch_assoc()) {
+                $proposalId = $row['id'];
+                $customerId = $row['customer_id'];
+                $providerId = $row['provider_id'];
+                $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+                $selectedTime = $row['selected_time'];
+                $userContent = $row['user_content'];
+                $selectedServices = explode(', ', $row['selected_services']);
+                $totalAmount = $row['total_amount'];
+                $counterTotall = $row['counter_totall'];
+                $current_time = $row['current_time'];
+
+                // Retrieve customer name and address based on customerId
+                $customerInfo = getCustomerInfo($providerId);
+
+                $customerImages = getCustomerImagesForProvider($providerId, $proposalId, $customerId);
+                $serviceCustomers = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                $serviceCustomers1 = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                
+                // $counterTotall = $serviceCustomers1['counter_totall'];
+
+                // Now you have an array containing the selected services and their prices for the customer
+                
+                // Output the retrieved customer name and address
+                $customerName = $customerInfo['fullname'];
+                $customerAddress = $customerInfo['address'];
+                $profile_picture = $customerInfo['profile_picture'];
+            ?>
+                        <div class="modal" id="accepts<?php echo $proposalId?>" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="confirmationModalLabel">Confirm Acceptance</h5>
+                                       
+                                    </div>
+                                    <div class="modal-body h-auto">
+                                        <h2 class="pb-4">Are you sure you want to accept this offer?</h2>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                                        <button type="button" class="btn btn-primary" data-dismiss="modal"
+                                            onclick="acceptOffers(<?php echo $proposalId; ?>)">Accept</button>
+                                    </div>
+                                    <script>
+                                        function acceptOffers(proposalId) {
+                                            const providerId = document.getElementById('providerId').value;
+                                            const customerId = document.getElementById('customerId').value;
+                                            const customerFullName = document.getElementById('customerFullName').value;
+                                            const messageContent = `${customerFullName} has Accepted your Counter offer.`;
+
+                                            // Send an AJAX request to update the status to "scheduled_offer" and send a message
+                                            const xhr = new XMLHttpRequest();
+                                            xhr.open('POST', 'update_status.php'); // Create a PHP file to handle status updates and messages
+                                            xhr.setRequestHeader('Content-Type', 'application/json');
+                                            xhr.send(JSON.stringify({
+                                                proposalId: proposalId,
+                                                status: 'scheduled_offer',
+                                                customerId: customerId,
+                                                providerId: providerId,
+                                                customerFullName: customerFullName,
+                                                messageContent: messageContent,
+                                            }));
+
+                                            xhr.onreadystatechange = function () {
+                                                if (xhr.readyState === 4 && xhr.status === 200) {
+                                                    // Handle the server's response here, if needed
+                                                    console.log(xhr.responseText);
+
+                                                    // Reload the page after the status is updated
+                                                    location.reload(); // This will refresh the current page
+                                                }
+                                            };
+                                        }
+                                    </script>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal" id="rejects<?php echo $proposalId?>" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        
+                                    </div>
+                                    <div class="modal-body h-auto">
+                                        <h2 class="pb-4">Are you sure you want to reject this offer?</h2>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                                        <button type="button" class="btn btn-primary" data-dismiss="modal"
+                                            onclick="rejectOffers(<?php echo $proposalId; ?>)">yes</button>
+                                            <input type="hidden" id="customerFullName" name="customerFullName" value="<?php echo $customerFullName?>" />
+                                            <input type="hidden" id="providerId" name="providerId" value="<?php echo $providerId?>" />
+                                            <input type="hidden" id="customerId" name="customerId" value="<?php echo $customerId?>" />
+                                    </div>
+                                    <script>
+                                        function rejectOffers(proposalId) {
+                                            const providerId = document.getElementById('providerId').value;
+                                            const customerId = document.getElementById('customerId').value;
+                                            const customerFullName = document.getElementById('customerFullName').value;
+                                            const messageContent = `${customerFullName} has rejected your Counter offer.`;
+
+                                            // Send an AJAX request to update the status to "scheduled_offer" and send a message
+                                            const xhr = new XMLHttpRequest();
+                                            xhr.open('POST', 'update_status.php'); // Create a PHP file to handle status updates and messages
+                                            xhr.setRequestHeader('Content-Type', 'application/json');
+                                            xhr.send(JSON.stringify({
+                                                proposalId: proposalId,
+                                                status: 'reject_offer',
+                                                customerId: customerId,
+                                                providerId: providerId,
+                                                customerFullName: customerFullName,
+                                                messageContent: messageContent,
+                                            }));
+
+                                            xhr.onreadystatechange = function () {
+                                                if (xhr.readyState === 4 && xhr.status === 200) {
+                                                    // Handle the server's response here, if needed
+                                                    console.log(xhr.responseText);
+
+                                                    // Reload the page after the status is updated
+                                                    location.reload(); // This will refresh the current page
+                                                }
+                                            };
+                                        }
+                                    </script>
+                                </div>
+                            </div>
+                        </div>
+
+
+                <!-- SECOND OFFER ONETIME START -->
+                <div class="my-offers onetime" style="margin-bottom: 40px;">
                     <!-- MY OFR PROFILE INFO START -->
-                                       <div class="my-ofr-profl-info">
-                    
-                                        <div class="row">
+                    <div class="my-ofr-profl-info">
+                        <div class="row">
                                             <div class="col-lg-6 mb-3 mb-lg-0 align-self-center">
                                                 <div class="prf-imgwithtext">
-                                                    <img src="./images/hiring/hiring1.png"/>
-                                                   <h2> David Johnson</h2>
-                                                   <p>Garden Maintenance</p>
+                                                <img src="../provider/<?php echo $profile_picture?>" />
+                                                <h2> <?php echo $customerName?></h2>
+                                                <p>Garden Maintenance</p>
                                                 </div>
                                             </div>
                     
                                             <div style="text-align: right;" class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                                <h5 class="pending"><span>Pending</span></h5>
-                                                <h6 style="color: #72B763;">Offered On 22,August,2022</h6>
+                                                <h5 class="pending"><span style="background-color: #70BE44;">Replied</span></h5>
+                                                <h6 style="color: #72B763;">Offered On <?php echo $current_time?></h6>
                                             </div>
                                         </div>
-                    
-                                        <div class="row bio-myoffer onetimepayment" style="padding-top: 30px;">
+                                        <div class="row bio-myoffer onetimepayment repliedoffer" style="padding-top: 30px;">
                                             <div class="col-lg-6 mb-3 mb-lg-0">
-                                                <h4 style="padding-bottom: 30px;">Service Cost Offer</h4>
-                                                <p><em><img src="./images/providerselected/Snow Plow.png"/> Snow Removal</em><span>$300</span></p>
-                                                <p><em><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</em><span>$300</span></p>
-                                                <p><em><img src="./images/providerselected/Grass.png"/> Grass Cutting</em><span>$300</span></p>
+                                                <h4 style="padding-bottom: 30px;">Counter Offer</h4>
+                                                <?php
+                                        $platformChargesPercentage = 10;
+
+                                        $platformCharges = ($totalAmount * $platformChargesPercentage) / 100;
+
+                                        $amountYouWillEarn = $totalAmount - $platformCharges;
+
+                                        $serviceCustomers1Index = 0;
+
+                                        $counter = 1;
+                                        foreach ($selectedServices as $service) {
+                                            // $displayTotal = isset($counterTotall) ? $counterTotall : $totalAmount;
+                                            $serviceImages = getServiceImages([$service]);
+                                            $serviceCustomers1Item = $serviceCustomers1[$serviceCustomers1Index];
+
+                                            $servicesNew = $serviceCustomers1Item['service_name'];
+                                            $servicePrice = $serviceCustomers1Item['counter_price'];
+                                            $counterNote = $serviceCustomers1Item['counter_note'];
+
+                                            $serviceCustomers1Index++;
+                                            ?>
+                                            <p style="
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+">
+                                                <em>
+                                                    <?php 
+                                                    foreach ($serviceImages as $imagePath) {
+                                                        ?>
+                                                        <img src="../admin/uploads/<?php echo $imagePath ?>" alt="Service Image" /><?php echo $servicesNew ?>
+                                                    <?php $counter++; } ?>
+                                                </em>
+                                                <span>$<?php echo $servicePrice ?></span>
+                                            </p>
+                                               
+                                        <?php 
+                                        $counter++; } ?>
                                                 <div class="totalselected">
                                                     <ul>
-                                                    <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$300</span></li></ul>
-                                                  </div>
+                                                    <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$<?php echo $counterTotall?></span></li></ul>
+                                                </div>
                                             </div>
                                             <div class="col-lg-6 mb-3 mb-lg-0" style="padding-left: 30px;">
-                                               
+                                            
                                                 <div class="custom-bookingtime">
-                                                    <h4 style="padding-bottom: 10px;">Booking Time</h4>
+                                                    <h4 style="padding-bottom: 10px;">Counter Booking Timings</h4>
                                                     <ul>
-                                                        <li><em>29-June-2023 , MON</em><span>10 am -12 am</span></li>
+                                                        <li><em><?php echo $selectedDate ?></em><span><?php echo $selectedTime?></span></li>
                                                     </ul>
                                                 </div>
                                                 <h4 style="padding-bottom: 30px;">Task Description</h4>
-                                                <p class="onetimepara">I'm Stuck at Norway highway near Crown valley street, I 
-                                                    have to wash & tint my car as soon as possible because 
-                                                    of this extreme sunny weather. kindly come fast ASAP 
-                                                    I'm waiting for your service. </p>
+                                                <p class="onetimepara"><?php echo $counterNote?></p>
                                             </div>
-                                            <div class="row viewimages-onetime">
-                                                <a href="#"><button>View Images</button></a>
-                                            </div>
-                                        </div>
-                    
-                    
-                                       </div>
-                    
-                    
-                    
-                                    </div>
-                                    <!-- MY OFR PROFILE INFO END -->
-                                    <div class="my-offers onetime" style="margin-bottom: 40px;">
+                                            <div class="row viewimages-onetime" style="text-align: end;">
+                                                        <!-- <a href="#"><button style="background:white; color:#70BE44; border:2px solid #70BE44">Reply Again</button></a> -->
+                                                        <a href="javascript:void(0);">
+                                            <button type="button" data-toggle="modal" data-target="#accepts<?php echo $proposalId;?>"
+                                                data-proposal-id="<?php echo $proposalId; ?>">Accept Offer</button>
+                                        </a>
+                                        <a class="ignore1" href="javascript:void(0);"><button type="button" data-toggle="modal" style="background:red" data-target="#rejects<?php echo $proposalId;?>"
+                                                data-proposal-id="<?php echo $proposalId; ?>">Reject</button></a>
+                                                    </div>
+                        </div>
+                    </div>
+                </div>
+               
 
-                                        <!-- MY OFR PROFILE INFO START -->
-                                                           <div class="my-ofr-profl-info">
-                                        
-                                                            <div class="row">
-                                                                <div class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                                                    <div class="prf-imgwithtext">
-                                                                        <img src="./images/hiring/hiring1.png"/>
-                                                                       <h2> David Johnson</h2>
-                                                                       <p>Garden Maintenance</p>
-                                                                    </div>
-                                                                </div>
-                                        
-                                                                <div style="text-align: right;" class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                                                    <h5 class="pending"><span>Pending</span></h5>
-                                                                    <h6 style="color: #72B763;">Offered On 22,August,2022</h6>
-                                                                </div>
-                                                            </div>
-                                        
-                                                            <div class="row bio-myoffer onetimepayment" style="padding-top: 30px;">
-                                                                <div class="col-lg-6 mb-3 mb-lg-0">
-                                                                    <h4 style="padding-bottom: 30px;">Service Cost Offer</h4>
-                                                                    <p><em><img src="./images/providerselected/Snow Plow.png"/> Snow Removal</em><span>$300</span></p>
-                                                                    <p><em><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</em><span>$300</span></p>
-                                                                    <p><em><img src="./images/providerselected/Grass.png"/> Grass Cutting</em><span>$300</span></p>
-                                                                    <div class="totalselected">
-                                                                        <ul>
-                                                                        <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$300</span></li></ul>
-                                                                      </div>
-                                                                </div>
-                                                                <div class="col-lg-6 mb-3 mb-lg-0" style="padding-left: 30px;">
-                                                                   
-                                                                    <div class="custom-bookingtime">
-                                                                        <h4 style="padding-bottom: 10px;">Booking Time</h4>
-                                                                        <ul>
-                                                                            <li><em>29-June-2023 , MON</em><span>10 am -12 am</span></li>
-                                                                        </ul>
-                                                                    </div>
-                                                                    <h4 style="padding-bottom: 30px;">Task Description</h4>
-                                                                    <p class="onetimepara">I'm Stuck at Norway highway near Crown valley street, I 
-                                                                        have to wash & tint my car as soon as possible because 
-                                                                        of this extreme sunny weather. kindly come fast ASAP 
-                                                                        I'm waiting for your service. </p>
-                                                                </div>
-                                                                <div class="row viewimages-onetime">
-                                                                    <a href="#"><button>View Images</button></a>
-                                                                </div>
-                                                            </div>
-                                        
-                                        
-                                                           </div>
-                                        
-                                        
-                                        
-                                                        </div>
-                                                        <!-- MY OFR PROFILE INFO END -->
+
+                
+            
+        <?php
+     }
+    }
+} else {
+    echo 'Error executing the query.';
+}
+?>                                             <!-- MY OFR PROFILE INFO END -->
             </div>
             <div class="tab-pane" id="tabs-2" role="tabpanel">
-                <div class="my-offers onetime" style="margin-bottom: 40px;">
+            <?php
+              include 'connection.php';
 
-<!-- MY OFR PROFILE INFO START -->
+              $userId = $_SESSION['user_id'];
+
+              $sql = "SELECT * FROM customer_proposal WHERE customer_id = ? AND status = 'new_offer'";
+              $stmt = $conn->prepare($sql);
+              $stmt->bind_param('s', $userId);
+
+              if ($stmt->execute()) {
+                  $result = $stmt->get_result();
+                  if ($result->num_rows == 0) {
+                    // No orders found for the provider
+                    echo '<h2 class="text-center texter">No new orders available.</h2>';
+                } else {
+            while ($row = $result->fetch_assoc()) {
+                $proposalId = $row['id'];
+                $customerId = $row['customer_id'];
+                $providerId = $row['provider_id'];
+                $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+                $selectedTime = $row['selected_time'];
+                $userContent = $row['user_content'];
+                $selectedServices = explode(', ', $row['selected_services']);
+                $totalAmount = $row['total_amount'];
+                $counterTotall = $row['counter_totall'];
+                $current_time = $row['current_time'];
+
+                // Retrieve customer name and address based on customerId
+                $customerInfo = getCustomerInfo($providerId);
+
+                $customerImages = getCustomerImagesForProvider($providerId, $proposalId, $customerId);
+                $serviceCustomers = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                $serviceCustomers1 = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                
+                // $counterTotall = $serviceCustomers1['counter_totall'];
+
+                // Now you have an array containing the selected services and their prices for the customer
+                
+                // Output the retrieved customer name and address
+                $customerName = $customerInfo['fullname'];
+                $customerAddress = $customerInfo['address'];
+                $profile_picture = $customerInfo['profile_picture'];
+            ?>
+                <div class="my-offers onetime" style="margin-bottom: 40px;">
                    <div class="my-ofr-profl-info">
 
                     <div class="row">
                         <div class="col-lg-6 mb-3 mb-lg-0 align-self-center">
                             <div class="prf-imgwithtext">
-                                <img src="./images/hiring/hiring1.png"/>
-                               <h2> David Johnson</h2>
+                                <img src="../provider/<?php echo $profile_picture ?>"/>
+                               <h2> <?php echo $customerName?></h2>
                                <p>Garden Maintenance</p>
                             </div>
                         </div>
 
                         <div style="text-align: right;" class="col-lg-6 mb-3 mb-lg-0 align-self-center">
                             <h5 class="pending"><span>Pending</span></h5>
-                            <h6 style="color: #72B763;">Offered On 22,August,2022</h6>
+                            <h6 style="color: #72B763;">Offered On <?php echo $current_time ?></h6>
                         </div>
                     </div>
 
                     <div class="row bio-myoffer onetimepayment" style="padding-top: 30px;">
                         <div class="col-lg-6 mb-3 mb-lg-0">
                             <h4 style="padding-bottom: 30px;">Service Cost Offer</h4>
-                            <p><em><img src="./images/providerselected/Snow Plow.png"/> Snow Removal</em><span>$300</span></p>
-                            <p><em><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</em><span>$300</span></p>
-                            <p><em><img src="./images/providerselected/Grass.png"/> Grass Cutting</em><span>$300</span></p>
+                            <?php
+                                        $platformChargesPercentage = 10;
+
+                                        $platformCharges = ($totalAmount * $platformChargesPercentage) / 100;
+
+                                        $amountYouWillEarn = $totalAmount - $platformCharges;
+
+                                        $serviceCustomers1Index = 0;
+
+                                        $counter = 1;
+                                        foreach ($selectedServices as $service) {
+                                            // $displayTotal = isset($counterTotall) ? $counterTotall : $totalAmount;
+                                            $serviceImages = getServiceImages([$service]);
+                                            $serviceCustomers1Item = $serviceCustomers1[$serviceCustomers1Index];
+
+                                            $servicesNew = $serviceCustomers1Item['service_name'];
+                                            $servicePrice = $serviceCustomers1Item['price'];
+                                            // $counterNote = $serviceCustomers1Item['counter_note'];
+
+                                            $serviceCustomers1Index++;
+                                            ?>
+                                            <p style="
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+">
+                                                <em>
+                                                    <?php 
+                                                    foreach ($serviceImages as $imagePath) {
+                                                        ?>
+                                                        <img src="../admin/uploads/<?php echo $imagePath ?>" alt="Service Image" /><?php echo $servicesNew ?>
+                                                    <?php $counter++; } ?>
+                                                </em>
+                                                <span>$<?php echo $servicePrice ?></span>
+                                            </p>
+                                               
+                                        <?php 
+                                        $counter++; } ?>
+                            <!-- <p><em><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</em><span>$300</span></p>
+                            <p><em><img src="./images/providerselected/Grass.png"/> Grass Cutting</em><span>$300</span></p> -->
                             <div class="totalselected">
                                 <ul>
-                                <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$300</span></li></ul>
+                                <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$ <?php echo $totalAmount?></span></li></ul>
                               </div>
                         </div>
                         <div class="col-lg-6 mb-3 mb-lg-0" style="padding-left: 30px;">
@@ -390,263 +720,310 @@ session_start();
                             <div class="custom-bookingtime">
                                 <h4 style="padding-bottom: 10px;">Booking Time</h4>
                                 <ul>
-                                    <li><em>29-June-2023 , MON</em><span>10 am -12 am</span></li>
+                                <li><em><?php echo $selectedDate?></em><span><?php echo $selectedTime?></span></li>
                                 </ul>
                             </div>
                             <h4 style="padding-bottom: 30px;">Task Description</h4>
-                            <p class="onetimepara">I'm Stuck at Norway highway near Crown valley street, I 
-                                have to wash & tint my car as soon as possible because 
-                                of this extreme sunny weather. kindly come fast ASAP 
-                                I'm waiting for your service. </p>
+                            <p class="onetimepara"><?php echo $userContent?></p>
                         </div>
-                        <div class="row viewimages-onetime">
-                            <a href="#"><button>View Images</button></a>
-                        </div>
+                        <div class="col-lg-12 mt-4">
+                <div class="content1<?php echo $proposalId?> hidden">
+                  <div class="gallery-servces moretext" style="text-align:center;">
+                    <h2>Service Place</h2>
+                    <ul class="my-galleryserv" style="display:flex; justify-content:center;">
+                    <?php
+                            foreach (array_slice($customerImages, 0, 5) as $imagePath) {
+                            ?>
+                                <li>
+                                    <img src="../customer/<?php echo $imagePath; ?>" alt="Customer Image" />
+                                </li>
+                            <?php
+                            }
+                            ?>
+                    </ul>
+                  </div>
+                </div>
+                
+              </div>
+              <div class="row viewimages-onetime">
+                <button class="read-more-button1<?php echo $proposalId?>">See More</button>
+                </div>
+                            <!-- <a href="#"><button>View Images</button></a> -->
+                        
                     </div>
 
 
                    </div>
-
-
-
                 </div>
+                <script>
+        const content1<?php echo $proposalId ?> = document.querySelector('.content1<?php echo $proposalId ?>');
+        const readMoreButton1<?php echo $proposalId ?> = document.querySelector('.read-more-button1<?php echo $proposalId ?>');
+
+        readMoreButton1<?php echo $proposalId ?>.addEventListener('click', function () {
+            if (content1<?php echo $proposalId ?>.classList.contains('hidden')) {
+                content1<?php echo $proposalId ?>.classList.remove('hidden');
+                readMoreButton1<?php echo $proposalId ?>.textContent = 'See Less';
+            } else {
+                content1<?php echo $proposalId ?>.classList.add('hidden');
+                readMoreButton1<?php echo $proposalId ?>.textContent = 'See More';
+            }
+        });
+    </script>
+                <?php
+     }
+    }
+} else {
+    echo 'Error executing the query.';
+}
+?>
                 <!-- MY OFR PROFILE INFO END -->
+              
+            </div>
+            <div class="tab-pane" id="tabs-3" role="tabpanel">
+            <?php
+              include 'connection.php';
+              $customerFullName = $_SESSION['customerFullName'];
+              $userId = $_SESSION['user_id'];
+
+              $sql = "SELECT * FROM customer_proposal WHERE customer_id = ? AND status = 'replied_offer'";
+              $stmt = $conn->prepare($sql);
+              $stmt->bind_param('s', $userId);
+
+              if ($stmt->execute()) {
+                  $result = $stmt->get_result();
+                  if ($result->num_rows == 0) {
+                    // No orders found for the provider
+                    echo '<h2 class="text-center texter">No new orders available.</h2>';
+                } else {
+            while ($row = $result->fetch_assoc()) {
+                $proposalId = $row['id'];
+                $customerId = $row['customer_id'];
+                $providerId = $row['provider_id'];
+                $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+                $selectedTime = $row['selected_time'];
+                $userContent = $row['user_content'];
+                $selectedServices = explode(', ', $row['selected_services']);
+                $totalAmount = $row['total_amount'];
+                $counterTotall = $row['counter_totall'];
+                $current_time = $row['current_time'];
+
+                // Retrieve customer name and address based on customerId
+                $customerInfo = getCustomerInfo($providerId);
+
+                $customerImages = getCustomerImagesForProvider($providerId, $proposalId, $customerId);
+                $serviceCustomers = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                $serviceCustomers1 = getCustomerServicesAndPrices($providerId, $proposalId, $userId);
+                
+                // $counterTotall = $serviceCustomers1['counter_totall'];
+
+                // Now you have an array containing the selected services and their prices for the customer
+                
+                // Output the retrieved customer name and address
+                $customerName = $customerInfo['fullname'];
+                $customerAddress = $customerInfo['address'];
+                $profile_picture = $customerInfo['profile_picture'];
+            ?>
+                        <div class="modal" id="confirmationModal<?php echo $proposalId?>" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="confirmationModalLabel">Confirm Acceptance</h5>
+                                       
+                                    </div>
+                                    <div class="modal-body h-auto">
+                                        <h2 class="pb-4">Are you sure you want to accept this offer?</h2>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                                        <button type="button" class="btn btn-primary" data-dismiss="modal"
+                                            onclick="acceptOffer(<?php echo $proposalId; ?>)">Accept</button>
+                                    </div>
+                                </div>
+                                <script>
+                                        function acceptOffer(proposalId) {
+                                            const providerId = document.getElementById('providerId').value;
+                                            const customerId = document.getElementById('customerId').value;
+                                            const customerFullName = document.getElementById('customerFullName').value;
+                                            const messageContent = `${customerFullName} has Accepted your Counter offer.`;
+
+                                            // Send an AJAX request to update the status to "scheduled_offer" and send a message
+                                            const xhr = new XMLHttpRequest();
+                                            xhr.open('POST', 'update_status.php'); // Create a PHP file to handle status updates and messages
+                                            xhr.setRequestHeader('Content-Type', 'application/json');
+                                            xhr.send(JSON.stringify({
+                                                proposalId: proposalId,
+                                                status: 'scheduled_offer',
+                                                customerId: customerId,
+                                                providerId: providerId,
+                                                customerFullName: customerFullName,
+                                                messageContent: messageContent,
+                                            }));
+
+                                            xhr.onreadystatechange = function () {
+                                                if (xhr.readyState === 4 && xhr.status === 200) {
+                                                    // Handle the server's response here, if needed
+                                                    console.log(xhr.responseText);
+
+                                                    // Reload the page after the status is updated
+                                                    location.reload(); // This will refresh the current page
+                                                }
+                                            };
+                                        }
+                                    </script>
+                            </div>
+                        </div>
+
+                        <div class="modal" id="reject<?php echo $proposalId?>" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        
+                                    </div>
+                                    <div class="modal-body h-auto">
+                                        <h2 class="pb-4">Are you sure you want to reject this offer?</h2>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                                        <button type="button" class="btn btn-primary" data-dismiss="modal"
+                                            onclick="rejectOffer(<?php echo $proposalId; ?>)">yes</button>
+                                            <input type="hidden" id="customerFullName" name="customerFullName" value="<?php echo $customerFullName?>" />
+                                            <input type="hidden" id="providerId" name="providerId" value="<?php echo $providerId?>" />
+                                            <input type="hidden" id="customerId" name="customerId" value="<?php echo $customerId?>" />
+                                    </div>
+                                </div>
+                                <script>
+                                        function rejectOffer(proposalId) {
+                                            const providerId = document.getElementById('providerId').value;
+                                            const customerId = document.getElementById('customerId').value;
+                                            const customerFullName = document.getElementById('customerFullName').value;
+                                            const messageContent = `${customerFullName} has rejected your Counter offer.`;
+
+                                            // Send an AJAX request to update the status to "scheduled_offer" and send a message
+                                            const xhr = new XMLHttpRequest();
+                                            xhr.open('POST', 'update_status.php'); // Create a PHP file to handle status updates and messages
+                                            xhr.setRequestHeader('Content-Type', 'application/json');
+                                            xhr.send(JSON.stringify({
+                                                proposalId: proposalId,
+                                                status: 'reject_offer',
+                                                customerId: customerId,
+                                                providerId: providerId,
+                                                customerFullName: customerFullName,
+                                                messageContent: messageContent,
+                                            }));
+
+                                            xhr.onreadystatechange = function () {
+                                                if (xhr.readyState === 4 && xhr.status === 200) {
+                                                    // Handle the server's response here, if needed
+                                                    console.log(xhr.responseText);
+
+                                                    // Reload the page after the status is updated
+                                                    location.reload(); // This will refresh the current page
+                                                }
+                                            };
+                                        }
+                                    </script>
+                            </div>
+                        </div>
+                        
+            
+
                 <!-- SECOND OFFER ONETIME START -->
                 <div class="my-offers onetime" style="margin-bottom: 40px;">
-
                     <!-- MY OFR PROFILE INFO START -->
-                                       <div class="my-ofr-profl-info">
-                    
-                                        <div class="row">
+                    <div class="my-ofr-profl-info">
+                        <div class="row">
                                             <div class="col-lg-6 mb-3 mb-lg-0 align-self-center">
                                                 <div class="prf-imgwithtext">
-                                                    <img src="./images/hiring/hiring1.png"/>
-                                                   <h2> David Johnson</h2>
-                                                   <p>Garden Maintenance</p>
+                                                <img src="../provider/<?php echo $profile_picture?>" />                                                <h2> <?php echo $customerName?></h2>
+                                                <p>Garden Maintenance</p>
                                                 </div>
                                             </div>
                     
                                             <div style="text-align: right;" class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                                <h5 class="pending"><span>Pending</span></h5>
-                                                <h6 style="color: #72B763;">Offered On 22,August,2022</h6>
+                                                <h5 class="pending"><span style="background-color: #70BE44;">Replied</span></h5>
+                                                <h6 style="color: #72B763;">Offered On <?php echo $current_time?></h6>
                                             </div>
                                         </div>
-                    
-                                        <div class="row bio-myoffer onetimepayment" style="padding-top: 30px;">
+                                        <div class="row bio-myoffer onetimepayment repliedoffer" style="padding-top: 30px;">
                                             <div class="col-lg-6 mb-3 mb-lg-0">
-                                                <h4 style="padding-bottom: 30px;">Service Cost Offer</h4>
-                                                <p><em><img src="./images/providerselected/Snow Plow.png"/> Snow Removal</em><span>$300</span></p>
-                                                <p><em><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</em><span>$300</span></p>
-                                                <p><em><img src="./images/providerselected/Grass.png"/> Grass Cutting</em><span>$300</span></p>
+                                                <h4 style="padding-bottom: 30px;">Counter Offer</h4>
+                                                <?php
+                                        $platformChargesPercentage = 10;
+
+                                        $platformCharges = ($totalAmount * $platformChargesPercentage) / 100;
+
+                                        $amountYouWillEarn = $totalAmount - $platformCharges;
+
+                                        $serviceCustomers1Index = 0;
+
+                                        $counter = 1;
+                                        foreach ($selectedServices as $service) {
+                                            // $displayTotal = isset($counterTotall) ? $counterTotall : $totalAmount;
+                                            $serviceImages = getServiceImages([$service]);
+                                            $serviceCustomers1Item = $serviceCustomers1[$serviceCustomers1Index];
+
+                                            $servicesNew = $serviceCustomers1Item['service_name'];
+                                            $servicePrice = $serviceCustomers1Item['counter_price'];
+                                            $counterNote = $serviceCustomers1Item['counter_note'];
+
+                                            $serviceCustomers1Index++;
+                                            ?>
+                                            <p style="
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+">
+                                                <em>
+                                                    <?php 
+                                                    foreach ($serviceImages as $imagePath) {
+                                                        ?>
+                                                        <img src="../admin/uploads/<?php echo $imagePath ?>" alt="Service Image" /><?php echo $servicesNew ?>
+                                                    <?php $counter++; } ?>
+                                                </em>
+                                                <span>$<?php echo $servicePrice ?></span>
+                                            </p>
+                                               
+                                        <?php 
+                                        $counter++; } ?>
                                                 <div class="totalselected">
                                                     <ul>
-                                                    <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$300</span></li></ul>
-                                                  </div>
+                                                    <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$<?php echo $counterTotall?></span></li></ul>
+                                                </div>
                                             </div>
                                             <div class="col-lg-6 mb-3 mb-lg-0" style="padding-left: 30px;">
-                                               
+                                            
                                                 <div class="custom-bookingtime">
-                                                    <h4 style="padding-bottom: 10px;">Booking Time</h4>
+                                                    <h4 style="padding-bottom: 10px;">Counter Booking Timings</h4>
                                                     <ul>
-                                                        <li><em>29-June-2023 , MON</em><span>10 am -12 am</span></li>
+                                                        <li><em><?php echo $selectedDate ?></em><span><?php echo $selectedTime?></span></li>
                                                     </ul>
                                                 </div>
                                                 <h4 style="padding-bottom: 30px;">Task Description</h4>
-                                                <p class="onetimepara">I'm Stuck at Norway highway near Crown valley street, I 
-                                                    have to wash & tint my car as soon as possible because 
-                                                    of this extreme sunny weather. kindly come fast ASAP 
-                                                    I'm waiting for your service. </p>
+                                                <p class="onetimepara"><?php echo $counterNote?></p>
                                             </div>
-                                            <div class="row viewimages-onetime">
-                                                <a href="#"><button>View Images</button></a>
-                                            </div>
-                                        </div>
-                    
-                    
-                                       </div>
-                    
-                    
-                    
-                                    </div>
-                <!-- SECOND OFFER ONETIME END -->
-            </div>
-            <div class="tab-pane" id="tabs-3" role="tabpanel">
-                
-               <!-- SECOND OFFER ONETIME START -->
-               <div class="my-offers onetime" style="margin-bottom: 40px;">
+                                            <div class="row viewimages-onetime" style="text-align: end;">
+                                                        <!-- <a href="#"><button style="background:white; color:#70BE44; border:2px solid #70BE44">Reply Again</button></a> -->
+                                                        <a href="javascript:void(0);">
+                                            <button type="button" data-toggle="modal" data-target="#confirmationModal<?php echo $proposalId;?>"
+                                                data-proposal-id="<?php echo $proposalId; ?>">Accept Offer</button>
+                                        </a>
+                                        <a class="ignore1" href="javascript:void(0);"><button type="button" data-toggle="modal" style="background:red" data-target="#reject<?php echo $proposalId;?>"
+                                                data-proposal-id="<?php echo $proposalId; ?>">Reject</button></a>
+                                                    </div>
+                        </div>
+                    </div>
+                </div>
+               
 
-                <!-- MY OFR PROFILE INFO START -->
-                                   <div class="my-ofr-profl-info">
-                
-                                    <div class="row">
-                                        <div class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                            <div class="prf-imgwithtext">
-                                                <img src="./images/hiring/hiring1.png"/>
-                                               <h2> David Johnson</h2>
-                                               <p>Garden Maintenance</p>
-                                            </div>
-                                        </div>
-                
-                                        <div style="text-align: right;" class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                            <h5 class="pending"><span style="background-color: #70BE44;">Replied</span></h5>
-                                            <h6 style="color: #72B763;">Offered On 22,August,2022</h6>
-                                        </div>
-                                    </div>
-                
-                                    <div class="row bio-myoffer onetimepayment repliedoffer" style="padding-top: 30px;">
-                                        <div class="col-lg-6 mb-3 mb-lg-0">
-                                            <h4 style="padding-bottom: 30px;">Counter Offer</h4>
-                                            <p><em><img src="./images/providerselected/Snow Plow.png"/> Snow Removal</em><span>$300</span></p>
-                                            <p><em><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</em><span>$300</span></p>
-                                            <p><em><img src="./images/providerselected/Grass.png"/> Grass Cutting</em><span>$300</span></p>
-                                            <div class="totalselected">
-                                                <ul>
-                                                <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$300</span></li></ul>
-                                              </div>
-                                        </div>
-                                        <div class="col-lg-6 mb-3 mb-lg-0" style="padding-left: 30px;">
-                                           
-                                            <div class="custom-bookingtime">
-                                                <h4 style="padding-bottom: 10px;">Counter Booking Timings</h4>
-                                                <ul>
-                                                    <li><em>29-June-2023 , MON</em><span>10 am -12 am</span></li>
-                                                </ul>
-                                            </div>
-                                            <h4 style="padding-bottom: 30px;">Task Description</h4>
-                                            <p class="onetimepara">I'm Stuck at Norway highway near Crown valley street, I 
-                                                have to wash & tint my car as soon as possible because 
-                                                of this extreme sunny weather. kindly come fast ASAP 
-                                                I'm waiting for your service. </p>
-                                        </div>
-                                        <div class="row viewimages-onetime">
-                                            <a href="#"><button>View All</button></a>
-                                        </div>
-                                    </div>
-                
-                
-                                   </div>
-                
-                
-                
-                                </div>
-            <!-- SECOND OFFER ONETIME END -->
 
-            <!-- SECOND OFFER ONETIME START -->
-            <div class="my-offers onetime" style="margin-bottom: 40px;">
-
-                <!-- MY OFR PROFILE INFO START -->
-                                   <div class="my-ofr-profl-info">
                 
-                                    <div class="row">
-                                        <div class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                            <div class="prf-imgwithtext">
-                                                <img src="./images/hiring/hiring1.png"/>
-                                               <h2> David Johnson</h2>
-                                               <p>Garden Maintenance</p>
-                                            </div>
-                                        </div>
-                
-                                        <div style="text-align: right;" class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                            <h5 class="pending"><span style="background-color: #70BE44;">Replied</span></h5>
-                                            <h6 style="color: #72B763;">Offered On 22,August,2022</h6>
-                                        </div>
-                                    </div>
-                
-                                    <div class="row bio-myoffer onetimepayment repliedoffer" style="padding-top: 30px;">
-                                        <div class="col-lg-6 mb-3 mb-lg-0">
-                                            <h4 style="padding-bottom: 30px;">Counter Offer</h4>
-                                            <p><em><img src="./images/providerselected/Snow Plow.png"/> Snow Removal</em><span>$300</span></p>
-                                            <p><em><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</em><span>$300</span></p>
-                                            <p><em><img src="./images/providerselected/Grass.png"/> Grass Cutting</em><span>$300</span></p>
-                                            <div class="totalselected">
-                                                <ul>
-                                                <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$300</span></li></ul>
-                                              </div>
-                                        </div>
-                                        <div class="col-lg-6 mb-3 mb-lg-0" style="padding-left: 30px;">
-                                           
-                                            <div class="custom-bookingtime">
-                                                <h4 style="padding-bottom: 10px;">Counter Booking Timings</h4>
-                                                <ul>
-                                                    <li><em>29-June-2023 , MON</em><span>10 am -12 am</span></li>
-                                                </ul>
-                                            </div>
-                                            <h4 style="padding-bottom: 30px;">Task Description</h4>
-                                            <p class="onetimepara">I'm Stuck at Norway highway near Crown valley street, I 
-                                                have to wash & tint my car as soon as possible because 
-                                                of this extreme sunny weather. kindly come fast ASAP 
-                                                I'm waiting for your service. </p>
-                                        </div>
-                                        <div class="row viewimages-onetime">
-                                            <a href="#"><button>View All</button></a>
-                                        </div>
-                                    </div>
-                
-                
-                                   </div>
-                
-                
-                
-                                </div>
-            <!-- SECOND OFFER ONETIME END -->
-
-            <!-- SECOND OFFER ONETIME START -->
-            <div class="my-offers onetime" style="margin-bottom: 40px;">
-
-                <!-- MY OFR PROFILE INFO START -->
-                                   <div class="my-ofr-profl-info">
-                
-                                    <div class="row">
-                                        <div class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                            <div class="prf-imgwithtext">
-                                                <img src="./images/hiring/hiring1.png"/>
-                                               <h2> David Johnson</h2>
-                                               <p>Garden Maintenance</p>
-                                            </div>
-                                        </div>
-                
-                                        <div style="text-align: right;" class="col-lg-6 mb-3 mb-lg-0 align-self-center">
-                                            <h5 class="pending"><span style="background-color: #70BE44;">Replied</span></h5>
-                                            <h6 style="color: #72B763;">Offered On 22,August,2022</h6>
-                                        </div>
-                                    </div>
-                
-                                    <div class="row bio-myoffer onetimepayment repliedoffer" style="padding-top: 30px;">
-                                        <div class="col-lg-6 mb-3 mb-lg-0">
-                                            <h4 style="padding-bottom: 30px;">Counter Offer</h4>
-                                            <p><em><img src="./images/providerselected/Snow Plow.png"/> Snow Removal</em><span>$300</span></p>
-                                            <p><em><img src="./images/providerselected/Cover Up.png"/> Spring Cleanup</em><span>$300</span></p>
-                                            <p><em><img src="./images/providerselected/Grass.png"/> Grass Cutting</em><span>$300</span></p>
-                                            <div class="totalselected">
-                                                <ul>
-                                                <li><em><img src="./images/providerselected/total.png"/>Total Charges</em><span>$300</span></li></ul>
-                                              </div>
-                                        </div>
-                                        <div class="col-lg-6 mb-3 mb-lg-0" style="padding-left: 30px;">
-                                           
-                                            <div class="custom-bookingtime">
-                                                <h4 style="padding-bottom: 10px;">Counter Booking Timings</h4>
-                                                <ul>
-                                                    <li><em>29-June-2023 , MON</em><span>10 am -12 am</span></li>
-                                                </ul>
-                                            </div>
-                                            <h4 style="padding-bottom: 30px;">Task Description</h4>
-                                            <p class="onetimepara">I'm Stuck at Norway highway near Crown valley street, I 
-                                                have to wash & tint my car as soon as possible because 
-                                                of this extreme sunny weather. kindly come fast ASAP 
-                                                I'm waiting for your service. </p>
-                                        </div>
-                                        <div class="row viewimages-onetime">
-                                            <a href="#"><button>View All</button></a>
-                                        </div>
-                                    </div>
-                
-                
-                                   </div>
-                
-                
-                
-                                </div>
+        <?php
+     }
+    }
+} else {
+    echo 'Error executing the query.';
+}
+?>
             <!-- SECOND OFFER ONETIME END -->
 
             </div>
@@ -722,7 +1099,7 @@ session_start();
   </div>
 </div>
 </footer>
-
+           
 <!-- footer end -->
 
 <!-- jQuery -->

@@ -16,11 +16,11 @@ function getCustomerInfo($customerId) {
   return array('fullname' => 'N/A', 'address' => 'N/A', 'profile_picture' => 'N/A'); // Provide default values if customer info not found
 }
 // Function to get the price of a service from the categories table
-function getCustomerServicesAndPrices($customerId) {
+function getCustomerServicesAndPrices($customerId, $proposalId) {
     global $conn;
-    $sql = "SELECT service_name, price FROM customer_services WHERE customer_id = ?";
+    $sql = "SELECT service_name, price FROM customer_services WHERE customer_id = ? AND proposal_id = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param('s', $customerId);
+    $stmt->bind_param('ss', $customerId, $proposalId);
 
     if ($stmt->execute()) {
         $result = $stmt->get_result();
@@ -52,11 +52,11 @@ function getServicePrice($service) {
     }
     return 'N/A'; // Provide a default value if service price not found
   }
-function getCustomerImagesForProvider($customerId, $providerId) {
+function getCustomerImagesForProvider($customerId, $providerId, $proposalId) {
   global $conn;
-  $sql = "SELECT image_path FROM customer_images WHERE customer_id = ? AND provider_id = ?";
+  $sql = "SELECT image_path FROM customer_images WHERE customer_id = ? AND provider_id = ? AND proposal_id = ?";
   $stmt = $conn->prepare($sql);
-  $stmt->bind_param('ss', $customerId, $providerId);
+  $stmt->bind_param('sss', $customerId, $providerId, $proposalId);
   if ($stmt->execute()) {
     $result = $stmt->get_result();
     $images = array();
@@ -140,54 +140,13 @@ function getServiceImages($service) {
     ?>
         <!-- partial -->
         <div class="container-fluid page-body-wrapper">
-            <!-- partial:partials/_settings-panel.php -->
-            <!-- <div class="theme-setting-wrapper">
-        <div id="settings-trigger"><i class="ti-settings"></i></div>
-        <div id="theme-settings" class="settings-panel">
-          <i class="settings-close ti-close"></i>
-          <p class="settings-heading">SIDEBAR SKINS</p>
-          <div class="sidebar-bg-options selected" id="sidebar-light-theme"><div class="img-ss rounded-circle bg-light border me-3"></div>Light</div>
-          <div class="sidebar-bg-options" id="sidebar-dark-theme"><div class="img-ss rounded-circle bg-dark border me-3"></div>Dark</div>
-          <p class="settings-heading mt-2">HEADER SKINS</p>
-           <div class="color-tiles mx-0 px-4">
-            <div class="tiles success"></div>
-            <div class="tiles warning"></div>
-            <div class="tiles danger"></div>
-            <div class="tiles info"></div>
-            <div class="tiles dark"></div>
-            <div class="tiles default"></div>
-          </div> 
-        </div>
-      </div> -->
-
-            <!-- partial -->
-            <!-- partial:partials/_sidebar.php -->
+        
             <?php
       include 'SideMenu.php'
       ?>
             <!-- partial -->
             <div class="main-panel">
-                <!-- Modal -->
-
-                <!-- <div class="modal fade" id="confirmationModal" role="dialog">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmationModalLabel">Confirm Acceptance</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body h-auto">
-                <h2 class="pb-4">Are you sure you want to accept this offer?</h2>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="acceptOffer(<?php echo $proposalId; ?>)">Accept</button>
-            </div>
-        </div>
-    </div>
-</div> -->
+                
                 <!-- START ROW MAIN-PANEL -->
                 <div class="row">
 
@@ -208,6 +167,7 @@ function getServiceImages($service) {
                 include 'connection.php';
 
                 $userId = $_SESSION['user_id'];
+                $providerName = $_SESSION['providerName'];
 
                 $sql = "SELECT * FROM customer_proposal WHERE provider_id = ? AND status = 'new_offer'";
                 $stmt = $conn->prepare($sql);
@@ -233,9 +193,9 @@ function getServiceImages($service) {
                   // Retrieve customer name and address based on customerId
                   $customerInfo = getCustomerInfo($customerId);
 
-                  $customerImages = getCustomerImagesForProvider($customerId, $userId);
-                  $serviceCustomers = getCustomerServicesAndPrices($customerId);
-                  $serviceCustomers1 = getCustomerServicesAndPrices($customerId);
+                  $customerImages = getCustomerImagesForProvider($customerId, $userId, $proposalId);
+                  $serviceCustomers = getCustomerServicesAndPrices($customerId, $proposalId);
+                  $serviceCustomers1 = getCustomerServicesAndPrices($customerId, $proposalId);
                   
                   
                   // Now you have an array containing the selected services and their prices for the customer
@@ -246,14 +206,12 @@ function getServiceImages($service) {
                   $profile_picture = $customerInfo['profile_picture'];
                   // $image_path = $customerImages['image_path'];
                 ?>
-                        <div class="modal fade" id="confirmationModal" role="dialog">
+                        <div class="modal" id="confirmationModal<?php echo $proposalId?>" role="dialog">
                             <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h5 class="modal-title" id="confirmationModalLabel">Confirm Acceptance</h5>
-                                        <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button> -->
+                                       
                                     </div>
                                     <div class="modal-body h-auto">
                                         <h2 class="pb-4">Are you sure you want to accept this offer?</h2>
@@ -263,17 +221,46 @@ function getServiceImages($service) {
                                         <button type="button" class="btn btn-primary" data-dismiss="modal"
                                             onclick="acceptOffer(<?php echo $proposalId; ?>)">Accept</button>
                                     </div>
+                                    <script>
+                                        function acceptOffer(proposalId) {
+                                            const counterNote = document.getElementById('counterNote').value;
+                                            const providerId = document.getElementById('providerId').value;
+                                            const customerId = document.getElementById('customerId').value;
+                                            const providerName = document.getElementById('providerName').value;
+                                            const messageContent = `${providerName} has accepted your offer.`;
+
+                                            // Send an AJAX request to update the status to "scheduled_offer" and send a message
+                                            const xhr = new XMLHttpRequest();
+                                            xhr.open('POST', 'update_status.php'); // Create a PHP file to handle status updates and messages
+                                            xhr.setRequestHeader('Content-Type', 'application/json');
+                                            xhr.send(JSON.stringify({
+                                                proposalId: proposalId,
+                                                status: 'scheduled_offer',
+                                                customerId: customerId,
+                                                providerId: providerId,
+                                                providerName: providerName,
+                                                messageContent: messageContent,
+                                            }));
+
+                                            xhr.onreadystatechange = function () {
+                                                if (xhr.readyState === 4 && xhr.status === 200) {
+                                                    // Handle the server's response here, if needed
+                                                    console.log(xhr.responseText);
+
+                                                    // Reload the page after the status is updated
+                                                    location.reload(); // This will refresh the current page
+                                                }
+                                            };
+                                        }
+                                    </script>
                                 </div>
                             </div>
                         </div>
-                        <div class="modal fade" id="rejectionModal" role="dialog">
+                        <div class="modal" id="reject<?php echo $proposalId?>" role="dialog">
                             <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <!-- <h5 class="modal-title" id="confirmationModalLabel"></h5> -->
-                                        <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button> -->
+                                        
                                     </div>
                                     <div class="modal-body h-auto">
                                         <h2 class="pb-4">Are you sure you want to reject this offer?</h2>
@@ -283,73 +270,111 @@ function getServiceImages($service) {
                                         <button type="button" class="btn btn-primary" data-dismiss="modal"
                                             onclick="rejectOffer(<?php echo $proposalId; ?>)">yes</button>
                                     </div>
+                                    <script>
+                                        function rejectOffer(proposalId) {
+                                            const counterNote = document.getElementById('counterNote').value;
+                                            const providerId = document.getElementById('providerId').value;
+                                            const customerId = document.getElementById('customerId').value;
+                                            const providerName = document.getElementById('providerName').value;
+                                            const messageContent = `${providerName} has rejected your offer.`;
+
+                                            // Send an AJAX request to update the status to "scheduled_offer" and send a message
+                                            const xhr = new XMLHttpRequest();
+                                            xhr.open('POST', 'update_status.php'); // Create a PHP file to handle status updates and messages
+                                            xhr.setRequestHeader('Content-Type', 'application/json');
+                                            xhr.send(JSON.stringify({
+                                                proposalId: proposalId,
+                                                status: 'reject_offer',
+                                                customerId: customerId,
+                                                providerId: providerId,
+                                                providerName: providerName,
+                                                messageContent: messageContent,
+                                            }));
+
+                                            xhr.onreadystatechange = function () {
+                                                if (xhr.readyState === 4 && xhr.status === 200) {
+                                                    // Handle the server's response here, if needed
+                                                    console.log(xhr.responseText);
+
+                                                    // Reload the page after the status is updated
+                                                    location.reload(); // This will refresh the current page
+                                                }
+                                            };
+                                        }
+                                    </script>
                                 </div>
                             </div>
                         </div>
 
                         <!-- counter modal -->
                        <!-- Counter Offer Modal -->
-                        <div class="modal" id="new<?php echo $customerId?>" role="dialog">
-                        <div class="modal-dialog">
+                       <div class="modal" id="new<?php echo $proposalId?>" role="dialog" data-proposal-id="<?php echo $proposalId ?>" data-total-amount="<?php echo $totalAmount ?>">
+                            <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">
 
                                         <h4 class="modal-title">Your Counter Offer For the services</h4>
                                     </div>
                                      
-                                    <div class="modal-body">
+                                    <div class="modal-body" data-proposal="<?php echo $proposalId ?>">
                                     <ul class="services-selected-counteroffer">
-    <?php
-    $platformChargesPercentage = 10; // 10% platform charges
+                                        <?php
+                                        $platformChargesPercentage = 10; // 10% platform charges
 
-    // Calculate platform charges
-    $platformCharges = ($totalAmount * $platformChargesPercentage) / 100;
+                                        // Calculate platform charges
+                                        $platformCharges = ($totalAmount * $platformChargesPercentage) / 100;
 
-    // Calculate the amount you'll earn
-    $amountYouWillEarn = $totalAmount - $platformCharges;
+                                        // Calculate the amount you'll earn
+                                        $amountYouWillEarn = $totalAmount - $platformCharges;
 
-    // Initialize an index variable for serviceCustomers1
-    $serviceCustomers1Index = 0;
+                                        // Initialize an index variable for serviceCustomers1
+                                        $serviceCustomers1Index = 0;
 
-    // Iterate through selected services
-    foreach ($selectedServices as $service) {
-        // Retrieve the price of the service from the categories table
-        $serviceImages = getServiceImages([$service]);
-        $serviceCustomers1Item = $serviceCustomers1[$serviceCustomers1Index];
+                                        // Iterate through selected services
+                                        $counter = 1;
+                                        foreach ($selectedServices as $service) {
+                                            // Retrieve the price of the service from the categories table
+                                            $serviceImages = getServiceImages([$service]);
+                                            $serviceCustomers1Item = $serviceCustomers1[$serviceCustomers1Index];
 
-        // Get service name and price
-        $servicesNew = $serviceCustomers1Item['service_name'];
-        $servicePrice = $serviceCustomers1Item['price'];
+                                            // Get service name and price
+                                            $servicesNew = $serviceCustomers1Item['service_name'];
+                                            $servicePrice = $serviceCustomers1Item['price'];
 
-        // Increment the index for serviceCustomers1
-        $serviceCustomers1Index++;
+                                            // Increment the index for serviceCustomers1
+                                            $serviceCustomers1Index++;
 
-        // Display service images and details
-        ?>
-        <li>
-            <em>
-                <?php foreach ($serviceImages as $imagePath) { ?>
-                    <img src="../admin/uploads/<?php echo $imagePath ?>" alt="Service Image" />
-                <?php } ?>
-                <?php echo $servicesNew; ?>
-                <span>$<?php echo $servicePrice; ?></span>
-            </em>
-        </li>
-    <?php } ?>
+                                            // Display service images and details
+                                            ?>
+                                            <li>
+                                                
+                                                <em>
+                                                    <?php 
+                                                    
+                                                    foreach ($serviceImages as $imagePath) { 
+                                                        
+                                                        ?>
+                                                        <img src="../admin/uploads/<?php echo $imagePath ?>" alt="Service Image" /><?php echo $servicesNew ?>
+                                                    <?php $counter++; } ?>
+                                                    <span>$<em style="font-size: 19px;" data-id="<?php echo $servicesNew;?>" data-service-id="<?php echo $counter; ?>" onblur="updateServicePrice(this);" id="<?php echo $counter; ?>_id" contenteditable="true"><?php echo $servicePrice; ?></em></span>
+                                                </em>
+                                            </li>
+                                        <?php  //$counter++;
+                                        $counter++; } ?>
 
-    <li class="totalcharges">
-        <em>
-            <img src="./images/counteroffer/4.png" /> Total Charges
-        </em>
-        <span>$<?php echo $totalAmount ?></span>
-    </li>
-</ul>
+                                        <li class="totalcharges">
+                                            <em>
+                                                <img src="./images/counteroffer/4.png" /> Total Charges
+                                            </em>
+                                            <span>$<?php echo $totalAmount ?></span>
+                                        </li>
+                                    </ul>
 
 
                                         <ul class="percent-counter">
                                             <li>
                                                 <em>Platform Charges (<?php echo $platformChargesPercentage ?>%)</em>
-                                                <span>$<?php echo $platformCharges ?></span>
+                                                <!-- <span>$<?php //echo $platformCharges ?></span> -->
                                             </li>
                                             <li>
                                                 <em>Your will Earn</em>
@@ -359,13 +384,23 @@ function getServiceImages($service) {
 
                                           <div class="text-area-counter">
                                               <h2>Note To Support Your Counter Offer</h2>
-                                              <textarea></textarea>
+                                              <textarea name="counter_note" id="counterNote"></textarea>
+                                              <input type="hidden" name="providerId" value="<?php echo $userId ?>" id="providerId" />
+                                              <input type="hidden" name="customerId" value="<?php echo $customerId ?>" id="customerId" />
+                                              <input type="hidden" name="providerName" value="<?php echo $providerName ?>" id="providerName" />
                                           </div>
                                     </div>
+                                   
+
+
 
                                     <div class="modal-footer">
-                                        <a href="success-popup.php"> <button>Send</button></a>
+                                        <a href="javascript:void(0);">
+                                            <button id="sendButton_<?php echo $proposalId; ?>">Send</button>
+                                        </a>
                                     </div>
+
+
                                 </div>
 
                             </div>
@@ -466,7 +501,7 @@ function getServiceImages($service) {
                                 <div class="row">
                                     <div class="col-md-4">
                                         <a href="javascript:void(0);">
-                                            <button type="button" data-toggle="modal" data-target="#confirmationModal"
+                                            <button type="button" data-toggle="modal" data-target="#confirmationModal<?php echo $proposalId;?>"
                                                 data-proposal-id="<?php echo $proposalId; ?>">Accept Offer</button>
                                         </a>
                                     </div>
@@ -474,14 +509,16 @@ function getServiceImages($service) {
 
 
                                     <div class="col-md-4">
-                                    <?php
-                                    echo  '<a type="button" data-toggle="modal" onclick="' . $customerId . '" data-target="#new' . $customerId . '">';
-                                    echo '<button>Counter Offer</button>';
-                                    echo '</a>';
-                                    ?>
+                                    <a href="javascript:void(0);" data-toggle="modal" data-target="#new<?php echo $proposalId?>" 
+                                        data-total-amount="<?php echo $totalAmount; ?>" 
+                                        data-selected-services="<?php echo json_encode($selectedServices); ?>" 
+                                        data-service-customers="<?php echo json_encode($serviceCustomers1); ?>"><button>Counter Offer</button>
+                                    </a>
+
                                     </div>
                                     <div class="col-md-4">
-                                        <a class="ignore1"><button data-dismiss="modal" data-target="#rejectionModal">Ignore</button></a>
+                                        <a class="ignore1" href="javascript:void(0);"><button type="button" data-toggle="modal" data-target="#reject<?php echo $proposalId;?>"
+                                                data-proposal-id="<?php echo $proposalId; ?>">Ignore</button></a>
                                     </div>
                                 </div>
                             </div>
@@ -504,46 +541,132 @@ function getServiceImages($service) {
             <!-- container-scroller -->
 
             <!-- plugins:js -->
-            <script>
-                function acceptOffer(proposalId) {
-                    // Send an AJAX request to update the status to "scheduled_offer"
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', 'update_status.php'); // Create a PHP file to handle status updates
-                    xhr.setRequestHeader('Content-Type', 'application/json');
-                    xhr.send(JSON.stringify({ proposalId: proposalId, status: 'scheduled_offer' }));
+           
+             <script>
+  // Function to calculate the updated total amount based on edited service prices
+  function updateTotalAmount(modal) {
+    const editablePrices = modal.querySelectorAll('[contenteditable="true"]');
+    let updatedTotalAmount = 0;
 
-                    xhr.onreadystatechange = function () {
-                        if (xhr.readyState === 4 && xhr.status === 200) {
-                            // Handle the server's response here, if needed
-                            console.log(xhr.responseText);
+    editablePrices.forEach((priceElement) => {
+      // Parse the edited price (default to 0 if not a valid number)
+      const editedPrice = parseFloat(priceElement.textContent) || 0;
+      updatedTotalAmount += editedPrice;
+    });
 
-                            // Reload the page after the status is updated
-                            location.reload(); // This will refresh the current page
-                        }
-                    };
-                }
+    // Calculate platform charges (10%)
+    const platformChargesPercentage = 10;
+    const platformCharges = (updatedTotalAmount * platformChargesPercentage) / 100;
 
-            </script>
-            <script>
-                function rejectOffer(proposalId) {
-                    // Send an AJAX request to update the status to "scheduled_offer"
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', 'update_status.php'); // Create a PHP file to handle status updates
-                    xhr.setRequestHeader('Content-Type', 'application/json');
-                    xhr.send(JSON.stringify({ proposalId: proposalId, status: 'reject_offer' }));
+    // Calculate the amount you'll earn
+    const amountYouWillEarn = updatedTotalAmount - platformCharges;
 
-                    xhr.onreadystatechange = function () {
-                        if (xhr.readyState === 4 && xhr.status === 200) {
-                            // Handle the server's response here, if needed
-                            console.log(xhr.responseText);
+    // Display the updated total amount and "Your will Earn"
+    const totalAmountElement = modal.querySelector('.totalcharges span');
+    const amountYouWillEarnElement = modal.querySelector('.percent-counter li:last-child span');
 
-                            // Reload the page after the status is updated
-                            location.reload(); // This will refresh the current page
-                        }
-                    };
-                }
+    if (totalAmountElement) {
+      totalAmountElement.textContent = '$' + updatedTotalAmount.toFixed(2);
+    }
 
-            </script>
+    if (amountYouWillEarnElement) {
+      amountYouWillEarnElement.textContent = '$' + amountYouWillEarn.toFixed(2);
+    }
+  }
+
+  // Add input and blur event listeners to each editable price element for all modals
+  const modals = document.querySelectorAll('.modal');
+  modals.forEach((modal) => {
+    const editablePrices = modal.querySelectorAll('[contenteditable="true"]');
+    editablePrices.forEach((priceElement) => {
+      priceElement.addEventListener('input', () => updateTotalAmount(modal));
+      priceElement.addEventListener('blur', () => updateTotalAmount(modal));
+    });
+
+    // Initialize total amount and "Your will Earn" when the page loads
+    updateTotalAmount(modal);
+  });
+</script>
+<script>
+function updateServicePrice(proposalId) {
+    // Get the modal element
+    const modal = document.getElementById(`new${proposalId}`);
+    
+    // Get the total amount from the modal
+   // Calculate the total amount
+   const totalAmountElement = modal.querySelector('.totalcharges span');
+    const totalAmount = parseFloat(totalAmountElement.textContent.replace('$', '')) || 0;
+    const counterNote = document.getElementById('counterNote').value;
+    const providerId = document.getElementById('providerId').value;
+    const customerId = document.getElementById('customerId').value;
+    const providerName = document.getElementById('providerName').value;
+
+
+    // Collect the updated service prices and their names
+    const updatedServicePrices = [];
+    const editablePrices = modal.querySelectorAll('[contenteditable="true"]');
+    
+    editablePrices.forEach((priceElement) => {
+        const editedPrice = parseFloat(priceElement.textContent) || 0;
+        const serviceName = priceElement.dataset.id; // Service name
+        updatedServicePrices.push({ name: serviceName, price: editedPrice });
+    });
+
+    // Calculate the platform charges
+    const platformChargesPercentage = 10;
+    const platformCharges = (totalAmount * platformChargesPercentage) / 100;
+
+    // Calculate the amount the user will earn
+    const amountYouWillEarn = totalAmount - platformCharges;
+
+    // Create an object with the updated service prices and the total amount
+    const data = {
+        proposalId: proposalId,
+        providerId: providerId,
+        customerId: customerId,
+        providerName: providerName,
+        servicePrices: updatedServicePrices,
+        totalAmount: totalAmount,
+        platformCharges: platformCharges,
+        amountYouWillEarn: amountYouWillEarn,
+        counterNote: counterNote,
+
+    };
+
+    console.log('data', data);
+    // return;
+    // Send the data to the server using AJAX
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'update-service-price.php', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            // Handle the response from the server (e.g., display a success message).
+            const response = JSON.parse(xhr.responseText);
+            
+            if (response.success) {
+                location.reload(); // This will refresh the current page    
+                // Optionally, close the modal or redirect to another page.
+            } else {
+                alert('Counter offer could not be sent. Please try again.');
+            }
+        }
+    };
+
+    xhr.send(JSON.stringify(data));
+}
+
+// Add a click event listener to each "Send" button
+const modalFooterButtons = document.querySelectorAll('[id^="sendButton_"]');
+modalFooterButtons.forEach((button) => {
+    const proposalId = button.id.split('_')[1];
+    button.addEventListener('click', () => updateServicePrice(proposalId));
+});
+</script>
+
+
+
             <script src="vendors/js/vendor.bundle.base.js"></script>
             <!-- endinject -->
             <!-- Plugin js for this page -->

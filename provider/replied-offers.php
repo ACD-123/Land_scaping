@@ -1,6 +1,100 @@
 <?php
 session_start();
+// Function to get customer information from the provider_registration table
+function getCustomerInfo($customerId) {
+  global $conn;
+  $sql = "SELECT fullname, profile_picture, address FROM provider_registration WHERE id = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param('s', $customerId);
+  if ($stmt->execute()) {
+      $result = $stmt->get_result();
+      if ($result->num_rows > 0) {
+          $row = $result->fetch_assoc();
+          return $row;
+      }
+  }
+  return array('fullname' => 'N/A', 'address' => 'N/A', 'profile_picture' => 'N/A'); // Provide default values if customer info not found
+}
+// Function to get the price of a service from the categories table
+function getCustomerServicesAndPrices($customerId, $proposalId) {
+    global $conn;
+    $sql = "SELECT service_name, counter_price, counter_totall, counter_note, price FROM customer_services WHERE customer_id = ? AND proposal_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('ss', $customerId, $proposalId);
 
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        $servicesAndPrices = array();
+
+        while ($row = $result->fetch_assoc()) {
+            $serviceCustomers = $row['service_name'];
+            $counterPrices = $row['counter_price'];
+            $counterTotall = $row['counter_totall'];
+            $counterNote = $row['counter_note'];
+            $priceService = $row['price'];
+            $servicesAndPrices[] = array('service_name' => $serviceCustomers, 'counter_price' => $counterPrices, 'counter_totall' => $counterTotall,'counter_note' => $counterNote, 'price' => $priceService);
+            
+        }
+
+        return $servicesAndPrices;
+    }
+
+    return array('counter_note' => 'N/A');
+}
+function getServicePrice($service) {
+    global $conn;
+    $sql = "SELECT price FROM customer_services WHERE service_name = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('s', $service);
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row['price'];
+        }
+    }
+    return 'N/A'; // Provide a default value if service price not found
+  }
+function getCustomerImagesForProvider($customerId, $providerId) {
+  global $conn;
+  $sql = "SELECT image_path FROM customer_images WHERE customer_id = ? AND provider_id = ?";
+  $stmt = $conn->prepare($sql);
+  $stmt->bind_param('ss', $customerId, $providerId);
+  if ($stmt->execute()) {
+    $result = $stmt->get_result();
+    $images = array();
+    while ($row = $result->fetch_assoc()) {
+      $images[] = $row['image_path'];
+    }
+    return $images;
+  }
+  return array();
+}
+
+
+function getServiceImages($service) {
+  global $conn;
+  $servicesImages = array();
+
+  // Create a prepared statement to select servicesImages based on service names
+  $sql = "SELECT image FROM categories WHERE heading IN (?)";
+  $stmt = $conn->prepare($sql);
+
+  if ($stmt) {
+      $categories = implode("', '", $service); // Assuming service names are in an array
+      $stmt->bind_param('s', $categories);
+
+      if ($stmt->execute()) {
+          $result = $stmt->get_result();
+
+          while ($row = $result->fetch_assoc()) {
+              $servicesImages[] = $row['image'];
+          }
+      }
+  }
+
+  return $servicesImages;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -8,16 +102,17 @@ session_start();
 <head>
   <!-- GOOGLE FONTS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-<!-- Optional theme -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900;1000&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900;1000&display=swap"
+    rel="stylesheet">
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Aaron Burks  </title>
+  <title>Aaron Burks </title>
   <!-- plugins:css -->
   <link rel="stylesheet" href="vendors/feather/feather.css">
   <link rel="stylesheet" href="vendors/mdi/css/materialdesignicons.min.css">
@@ -39,6 +134,7 @@ session_start();
   <!-- endinject -->
   <link rel="shortcut icon" href="images/sitelogo-singup.png" />
 </head>
+
 <body>
   <div class="container-scroller">
     <!-- partial:partials/_navbar.php -->
@@ -70,14 +166,17 @@ session_start();
         <i class="settings-close ti-close"></i>
         <ul class="nav nav-tabs border-top" id="setting-panel" role="tablist">
           <li class="nav-item">
-            <a class="nav-link active" id="todo-tab" data-bs-toggle="tab" href="#todo-section" role="tab" aria-controls="todo-section" aria-expanded="true">TO DO LIST</a>
+            <a class="nav-link active" id="todo-tab" data-bs-toggle="tab" href="#todo-section" role="tab"
+              aria-controls="todo-section" aria-expanded="true">TO DO LIST</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="chats-tab" data-bs-toggle="tab" href="#chats-section" role="tab" aria-controls="chats-section">CHATS</a>
+            <a class="nav-link" id="chats-tab" data-bs-toggle="tab" href="#chats-section" role="tab"
+              aria-controls="chats-section">CHATS</a>
           </li>
         </ul>
         <div class="tab-content" id="setting-content">
-          <div class="tab-pane fade show active scroll-wrapper" id="todo-section" role="tabpanel" aria-labelledby="todo-section">
+          <div class="tab-pane fade show active scroll-wrapper" id="todo-section" role="tabpanel"
+            aria-labelledby="todo-section">
             <div class="add-items d-flex px-3 mb-0">
               <form class="form w-100">
                 <div class="form-group d-flex">
@@ -226,256 +325,196 @@ session_start();
         <!-- START ROW MAIN-PANEL -->
         <div class="row">
 
-        
+
           <div class="order-in-progress replied-main-row">
             <h1><b style="color: #70BE44;">Replied </b>Offers</h1>
             <!-- FIRST NEW OFFER -->
-        <div class="first-offer">
-            <div class="profileheadsection">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="offerprofile-name">
-                        <img src="./images/profileman.png"/>
-                        <h3>David Johnson<br><b>User ID # 4ISK4DH</b></h3>
-                    </div>
-                </div>
-                <div class="col-md-3 d-flex align-items-center">
-                    <!-- <h3 class="address"><img src="./images/mappin.png"/> San Francisco, 5th Avenue 22nd Street,
-                        House No- B-242</h3> -->
-                </div>
-                <div class="col-md-3 d-flex align-items-center">
-                    <!-- <h6 style="color: #4492BE;"><img src="./images/scheduled.png"/> 21, August,4:00 AM, SUN</h6> -->
-                </div>
-                <div class="col-md-3 align-items-center">
-                    <h5 style="color: #70BE44; text-align: right; font-weight: bold;">Accepted</h5>
-                    <h4 style="color: #70BE44; text-align: right;">Offered On 22,August,2022</h4>
-                </div>
-            </div>
-        </div>
+            <?php
+                include 'connection.php';
 
-        <div class="service-selectedsection">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="order-details-progress">
-                        <h2>Customer Offer Details</h2>
-                        <ul class="orderdetails-lists">
-                          <li><em>Customer Offer</em><span style="color: #70BE44;">$300</span></li>
-                          <li><em>Booking Time</em><span style="color: #70BE44;">21, August,4:00 AM, SUN</span></li>
-                          <li><em> Services</em><span style="color: #969696;">Grass Cutting <img src="./images/check.png"/>
-                          <br>Grass Cutting <img src="./images/check.png"/><br>Grass Cutting <img src="./images/check.png"/></span></li>
-                          <li><em>Total  amount paid </em><span style="color: #70BE44;">$ 300.00</span></li>
+                $userId = $_SESSION['user_id'];
 
-                        </ul>
-                      </div>
-                </div>
-                <div class="col-md-6" style="padding-left: 40px;">         
-                    <h6>Task Description</h6>
-                    <p>I'm Stuck at Norway highway near Crown valley street, I 
-                        have to wash & tint my car as soon as possible because 
-                        of this extreme sunny weather. kindly come fast ASAP 
-                        I'm waiting for your service. </p>
-                </div>
-            </div>
-            <div class="row repliedoffer-secondrow">
-                <div class="col-md-6">
-                    <div class="order-details-progress">
-                        <h2>Provider Counter Details</h2>
-                        <ul class="orderdetails-lists">
-                          <li><em>Snow Removal</em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li><em>Spring Cleanup</em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li><em>Grass Cutting </em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li class="total-amount"><em><img src="./images/total.png"/> Total Charges </em><span style="color: #0d0e0d !important;">$300</span></li>
-                          
-                        </ul>
-                      </div>
-                </div>
-                <div class="col-md-6" style="padding-left: 40px;">         
-                    <h6>Counter Offer note</h6>
-                    <p>I'm Stuck at Norway highway near Crown valley street, I 
-                        have to wash & tint my car as soon as possible because 
-                        of this extreme sunny weather. kindly come fast ASAP 
-                        I'm waiting for your service. </p>
-                </div>
-            </div>
-        </div>
+                $sql = "SELECT * FROM customer_proposal WHERE provider_id = ? AND status = 'replied_offer'";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param('s', $userId);
 
+                if ($stmt->execute()) {
+                    $result = $stmt->get_result();
+                    if ($result->num_rows == 0) {
+                      // No orders found for the provider
+                      echo '<h2 class="text-center texter">No new orders available.</h2>';
+                  } else {
+              while ($row = $result->fetch_assoc()) {
+                  $proposalId = $row['id'];
+                  $customerId = $row['customer_id'];
+                  $providerId = $row['provider_id'];
+                  $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
+                  $selectedTime = $row['selected_time'];
+                  $userContent = $row['user_content'];
+                  $selectedServices = explode(', ', $row['selected_services']);
+                  $totalAmount = $row['total_amount'];
+                  $counterTotall = $row['counter_totall'];
+                  $current_time = $row['current_time'];
 
-</div>
-           <!--  SECOND NEWOFFER -->
-           <div class="first-offer" style="margin-top: 30px;">
-            <div class="profileheadsection">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="offerprofile-name">
-                        <img src="./images/profileman.png"/>
-                        <h3>David Johnson<br><b>User ID # 4ISK4DH</b></h3>
-                    </div>
-                </div>
-                <div class="col-md-3 d-flex align-items-center">
-                    <!-- <h3 class="address"><img src="./images/mappin.png"/> San Francisco, 5th Avenue 22nd Street,
-                        House No- B-242</h3> -->
-                </div>
-                <div class="col-md-3 d-flex align-items-center">
-                    <!-- <h6 style="color: #4492BE;"><img src="./images/scheduled.png"/> 21, August,4:00 AM, SUN</h6> -->
-                </div>
-                <div class="col-md-3 align-items-center">
-                    <h5 style="color: #4483BE; text-align: right; font-weight: bold;">Pending</h5>
-                    <h4 style="color: #70BE44; text-align: right;">Offered On 22,August,2022</h4>
-                </div>
-            </div>
-        </div>
+                  // Retrieve customer name and address based on customerId
+                  $customerInfo = getCustomerInfo($customerId);
 
-        <div class="service-selectedsection">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="order-details-progress">
-                        <h2>Customer Offer Details</h2>
-                        <ul class="orderdetails-lists">
-                          <li><em>Customer Offer</em><span style="color: #70BE44;">$300</span></li>
-                          <li><em>Booking Time</em><span style="color: #70BE44;">21, August,4:00 AM, SUN</span></li>
-                          <li><em>Services </em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li><em>Total  amount paid</em><span style="color: #969696;">Grass Cutting <img src="./images/check.png"/>
-                            <br>Grass Cutting <img src="./images/check.png"/><br>Grass Cutting <img src="./images/check.png"/></span></li>
-                        </ul>
-                      </div>
-                </div>
-                <div class="col-md-6" style="padding-left: 40px;">         
-                    <h6>Task Description</h6>
-                    <p>I'm Stuck at Norway highway near Crown valley street, I 
-                        have to wash & tint my car as soon as possible because 
-                        of this extreme sunny weather. kindly come fast ASAP 
-                        I'm waiting for your service. </p>
-                </div>
-            </div>
-            <div class="row repliedoffer-secondrow">
-                <div class="col-md-6">
-                    <div class="order-details-progress">
-                        <h2>Customer Offer Details</h2>
-                        <ul class="orderdetails-lists">
-                          <li><em>Snow Removal</em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li><em>Spring Cleanup</em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li><em>Grass Cutting </em><span style="color: #70BE44;">$ 100.00</span></li>
-                          <li class="total-amount"><em><img src="./images/total.png"/> Total Charges </em><span style="color: #0d0e0d !important;">$300</span></li>
-                          
-                        </ul>
-                      </div>
-                </div>
-                <div class="col-md-6" style="padding-left: 40px;">         
-                    <h6>Counter Offer note</h6>
-                    <p>I'm Stuck at Norway highway near Crown valley street, I 
-                        have to wash & tint my car as soon as possible because 
-                        of this extreme sunny weather. kindly come fast ASAP 
-                        I'm waiting for your service. </p>
-                </div>
-            </div>
-        </div>
-
-
-</div>
-<!-- THIRD NEW OFFER -->
-<div class="first-offer" style="margin-top: 30px;">
-    <div class="profileheadsection">
-    <div class="row">
-        <div class="col-md-3">
-            <div class="offerprofile-name">
-                <img src="./images/profileman.png"/>
-                <h3>David Johnson<br><b>User ID # 4ISK4DH</b></h3>
-            </div>
-        </div>
-        <div class="col-md-3 d-flex align-items-center">
-            <!-- <h3 class="address"><img src="./images/mappin.png"/> San Francisco, 5th Avenue 22nd Street,
-                House No- B-242</h3> -->
-        </div>
-        <div class="col-md-3 d-flex align-items-center">
-            <!-- <h6 style="color: #4492BE;"><img src="./images/scheduled.png"/> 21, August,4:00 AM, SUN</h6> -->
-        </div>
-        <div class="col-md-3 align-items-center">
-            <h5 style="color: #70BE44; text-align: right; font-weight: bold;">Accepted</h5>
-            <h4 style="color: #70BE44; text-align: right;">Offered On 22,August,2022</h4>
-        </div>
-    </div>
-</div>
-
-<div class="service-selectedsection">
-    <div class="row">
-        <div class="col-md-6">
-            <div class="order-details-progress">
-                <h2>Customer Offer Details</h2>
-                <ul class="orderdetails-lists">
-                  <li><em>Customer Offer</em><span style="color: #70BE44;">$300</span></li>
-                  <li><em>Booking Time</em><span style="color: #70BE44;">21, August,4:00 AM, SUN</span></li>
-                  <li><em>Services </em><span style="color: #70BE44;">$ 100.00</span></li>
-                  <li><em>Total  amount paid</em><span style="color: #969696;">Grass Cutting <img src="./images/check.png"/>
-                    <br>Grass Cutting <img src="./images/check.png"/><br>Grass Cutting <img src="./images/check.png"/></span></li>
-                </ul>
-              </div>
-        </div>
-        <div class="col-md-6" style="padding-left: 40px;">         
-            <h6>Task Description</h6>
-            <p>I'm Stuck at Norway highway near Crown valley street, I 
-                have to wash & tint my car as soon as possible because 
-                of this extreme sunny weather. kindly come fast ASAP 
-                I'm waiting for your service. </p>
-        </div>
-    </div>
-    <div class="row repliedoffer-secondrow">
-        <div class="col-md-6">
-            <div class="order-details-progress">
-                <h2>Customer Offer Details</h2>
-                <ul class="orderdetails-lists">
-                  <li><em>Snow Removal</em><span style="color: #70BE44;">$ 100.00</span></li>
-                  <li><em>Spring Cleanup</em><span style="color: #70BE44;">$ 100.00</span></li>
-                  <li><em>Grass Cutting </em><span style="color: #70BE44;">$ 100.00</span></li>
-                  <li class="total-amount"><em><img src="./images/total.png"/> Total Charges </em><span style="color: #0d0e0d !important;">$300</span></li>
+                  $customerImages = getCustomerImagesForProvider($customerId, $userId);
+                  $serviceCustomers = getCustomerServicesAndPrices($customerId, $proposalId);
+                  $serviceCustomers1 = getCustomerServicesAndPrices($customerId, $proposalId);
+                  $serviceCustomers3 = getCustomerServicesAndPrices($customerId, $proposalId);
+                  // $counterNote = $serviceCustomers1['counter_note'];
                   
-                </ul>
+                  
+                  // Now you have an array containing the selected services and their prices for the customer
+                  
+                  // Output the retrieved customer name and address
+                  $customerName = $customerInfo['fullname'];
+                  $customerAddress = $customerInfo['address'];
+                  $profile_picture = $customerInfo['profile_picture'];
+                  // $image_path = $customerImages['image_path'];
+                ?>
+            <div class="first-offer">
+              <div class="profileheadsection">
+                <div class="row">
+                  <div class="col-md-3">
+                  <div style="display:flex; gap:10px; align-items:center">
+                      <div style="width:60px;height:60px;border-radius: 112px;margin-bottom:10px;">
+                          <img style="width: 100%;object-fit: fill;height: 100%;border-radius: 118px;" src="../customer/<?php echo $profile_picture?>" />
+                      </div>
+                      <h3>
+                          <?php echo $customerName?><br><b>User ID #
+                              <?php echo $customerId?>
+                          </b>
+                      </h3>
+                  </div>
+                  </div>
+                  <div class="col-md-3 d-flex align-items-center">
+                    <!-- <h3 class="address"><img src="./images/mappin.png"/> San Francisco, 5th Avenue 22nd Street,
+                        House No- B-242</h3> -->
+                  </div>
+                  <div class="col-md-3 d-flex align-items-center">
+                    <!-- <h6 style="color: #4492BE;"><img src="./images/scheduled.png"/> 21, August,4:00 AM, SUN</h6> -->
+                  </div>
+                  <div class="col-md-3 align-items-center">
+                    <h5 style="color: #70BE44; text-align: right; font-weight: bold;">Accepted</h5>
+                    <h4 style="color: #70BE44; text-align: right;"><?php echo $selectedDate?></h4>
+                  </div>
+                </div>
               </div>
+
+              <div class="service-selectedsection">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="order-details-progress">
+                      <h2>Customer Offer Details</h2>
+                      <ul class="orderdetails-lists">
+                        <!-- <li><em>Customer Offer</em><span style="color: #70BE44;"><?php //echo $totalAmount?></span></li> -->
+                        <li><em>Booking Time</em><span style="color: #70BE44;"><?php echo $selectedDate , str_repeat('&nbsp;', 5), $selectedTime?></span></li>
+                        <li>
+                          <em> Services</em>
+                          <div style="display: inline-flex;flex-direction: column;float: inline-end;text-align: end;">
+                          <?php foreach ($serviceCustomers as $servicenew) {
+                            $services = $servicenew['service_name'];
+                            $servicePrice = $servicenew['price'];
+                            // echo $serviceCustomers; echo "<br/>";
+                            // echo $servicePrice;echo "<br/>";
+                          ?>
+                            <span style="color: #969696;"><?php echo $services ?> <img src="./images/check.png" /></span>
+                            <?php } ?>
+                          </div>
+                        </li>
+                        <li><em>Total amount paid </em><span style="color: #70BE44;">$ <?php echo $totalAmount?></span></li>
+
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="col-md-6" style="padding-left: 40px;">
+                    <h6>Task Description</h6>
+                    <p><?php echo $userContent?></p>
+                  </div>
+                </div>
+                <div class="row repliedoffer-secondrow">
+                  <div class="col-md-6">
+                    <div class="order-details-progress">
+                      <h2>Provider Counter Details</h2>
+                      <ul class="orderdetails-lists">
+                      <?php foreach ($serviceCustomers1 as $servicenew) {
+                            $services = $servicenew['service_name'];
+                            $counterPrice = $servicenew['counter_price'];
+                            // echo $serviceCustomers; echo "<br/>";
+                            // echo $servicePrice;echo "<br/>";
+                          ?>
+                          <li><em><?php echo $services ?></em><span style="color: #70BE44;">$ <?php echo $counterPrice?></span></li>
+                            
+                          <?php } ?>
+                        <li class="total-amount"><em><img src="./images/total.png" /> Total Charges </em><span
+                            style="color: #0d0e0d !important;">$<?php echo $counterTotall?></span></li>
+
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="col-md-6" style="padding-left: 40px;">
+                    <h6>Counter Offer note</h6>
+                    <p> <?php 
+                    $counterNoteLimit = 1; // Set the limit to 1
+                    $counterNoteCount = 0; // Initialize a counter variable
+                    foreach ($serviceCustomers3 as $servicenew) {
+                            $counterNote = $servicenew['counter_note'];
+                            if ($counterNoteCount < $counterNoteLimit) {
+                              echo $counterNote;
+                              $counterNoteCount++; // Increment the counter
+                          }
+                            // echo $serviceCustomers; echo "<br/>";
+                            // echo $servicePrice;echo "<br/>";
+                    } 
+                          ?></p>
+                  </div>
+                </div>
+              </div>
+
+
+            </div>
+            <?php
+              }
+            }
+        } else {
+            echo 'Error executing the query.';
+        }
+        ?>
+          </div>
+          <!-- END ROW MAIN-PANEL -->
         </div>
-        <div class="col-md-6" style="padding-left: 40px;">         
-            <h6>Counter Offer note</h6>
-            <p>I'm Stuck at Norway highway near Crown valley street, I 
-                have to wash & tint my car as soon as possible because 
-                of this extreme sunny weather. kindly come fast ASAP 
-                I'm waiting for your service. </p>
-        </div>
+        <!-- main-panel ends -->
+      </div>
+      <!-- page-body-wrapper ends -->
     </div>
-</div>
+    <!-- container-scroller -->
 
+    <!-- plugins:js -->
+    <script src="vendors/js/vendor.bundle.base.js"></script>
+    <!-- endinject -->
+    <!-- Plugin js for this page -->
+    <script src="vendors/chart.js/Chart.min.js"></script>
+    <script src="vendors/bootstrap-datepicker/bootstrap-datepicker.min.js"></script>
+    <script src="vendors/progressbar.js/progressbar.min.js"></script>
 
-</div>
-</div>
-            <!-- END ROW MAIN-PANEL -->
-        </div>
-      <!-- main-panel ends -->
-    </div>
-    <!-- page-body-wrapper ends -->
-  </div>
-  <!-- container-scroller -->
-
-  <!-- plugins:js -->
-  <script src="vendors/js/vendor.bundle.base.js"></script>
-  <!-- endinject -->
-  <!-- Plugin js for this page -->
-  <script src="vendors/chart.js/Chart.min.js"></script>
-  <script src="vendors/bootstrap-datepicker/bootstrap-datepicker.min.js"></script>
-  <script src="vendors/progressbar.js/progressbar.min.js"></script>
-
-  <!-- End plugin js for this page -->
-  <!-- inject:js -->
-  <script src="js/off-canvas.js"></script>
-  <script src="js/hoverable-collapse.js"></script>
-  <script src="js/template.js"></script>
-  <script src="js/settings.js"></script>
-  <script src="js/todolist.js"></script>
-  <!-- endinject -->
-  <!-- Custom js for this page-->
-  <script src="js/jquery.cookie.js" type="text/javascript"></script>
-  <script src="js/dashboard.js"></script>
-  <script src="js/Chart.roundedBarCharts.js"></script>
-  <script src="script.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
-  <!-- End custom js for this page-->
+    <!-- End plugin js for this page -->
+    <!-- inject:js -->
+    <script src="js/off-canvas.js"></script>
+    <script src="js/hoverable-collapse.js"></script>
+    <script src="js/template.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/todolist.js"></script>
+    <!-- endinject -->
+    <!-- Custom js for this page-->
+    <script src="js/jquery.cookie.js" type="text/javascript"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/Chart.roundedBarCharts.js"></script>
+    <script src="script.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <!-- End custom js for this page-->
 </body>
 
 </html>

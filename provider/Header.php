@@ -31,6 +31,7 @@ include '../connection.php';
                         if ($result->num_rows > 0) {
                             $row = $result->fetch_assoc();
                             $ProviderName = $row['fullname'];
+                            $_SESSION['providerName'] = $row['fullname'];
                             $city = $row['city'];
                             $address = $row['address'];
                             $country = $row['country'];
@@ -49,6 +50,7 @@ include '../connection.php';
       <li class="nav-item font-weight-semibold d-none d-lg-block ms-0">
         <a href="dashboard.php"><img class="hmesec" src="./images/home.PNG" /></a>
       </li>
+      
       <li><a class="location-buton" href="#"><button><i class="menu-icon mdi mdi-map-marker"></i>
             
            
@@ -56,6 +58,12 @@ include '../connection.php';
             <?php echo $country; ?>,
             <?php echo $city; ?>
           </button></a></li>
+          <li class="nav-item font-weight-semibold d-none d-lg-block ms-0 p-2">
+        <a href="notification.php"><i style="
+    font-size: 30px;
+    color: #57a13c;
+" class="menu-icon mdi mdi-bell-ring"></i></a>
+      </li>
     </ul>
     <ul class="navbar-nav ms-auto">
       <li class="nav-item dropdown d-none d-lg-block user-dropdown">

@@ -14425,7 +14425,14 @@ fieldset:disabled .swal2-modal .swal2-buttonswrapper .swal2-styled,
   overflow-y: auto;
   outline: 0;
 }
-
+.gallery-images img{
+  width: 100%;
+}
+.gallery-images{
+  display: flex;
+    gap: 13px;
+    list-style: none;
+}
 .modal-dialog {
   position: relative;
   width: auto;
@@ -32129,9 +32136,9 @@ li.profile-name img {
   padding: 8px 10px;
   border-radius: 10px;
 }
-.progress-gallery {
+/* .progress-gallery {
   display: none;
-}
+} */
 .viewgallery {
   text-align: center;
   padding: 40px 0px 0px 0px;

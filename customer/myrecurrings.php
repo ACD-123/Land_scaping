@@ -92,7 +92,7 @@ session_start();
     </div>
     <div class="myoffer-button-serv">
         <ul>
-            <li><a href="#"><button style="background-color: #E6E6E6; font-family: Cairo;
+            <li><a href="myoffers.php"><button style="background-color: #E6E6E6; font-family: Cairo;
                 font-size: 30px;
                 font-weight: 600;
                 line-height: 56px;
@@ -100,7 +100,7 @@ session_start();
                 text-align: left;
                 color: #9D9D9D;
                 ">One Time Service</button></a></li>
-            <li><a href="#"><button style="background-color: #70BE44; font-family: Cairo;
+            <li><a href="myrecurrings.php"><button style="background-color: #70BE44; font-family: Cairo;
                 font-size: 30px;
                 font-weight: 600;
                 line-height: 56px;

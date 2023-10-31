@@ -222,7 +222,7 @@ if ($result->num_rows > 0) {
   <?php
 
   // Retrieve services from the database
-$sql = "SELECT * FROM provider_registration WHERE role_id = 2 LIMIT 3";
+$sql = "SELECT * FROM provider_registration WHERE role_id = 2 ";
 $result = $conn->query($sql);
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {

@@ -2737,6 +2737,7 @@ section#dashboard-hiringsection .dash-order-list ul li:hover img {
 
 section#dashboard-hiringsection .text-inner img {
   position: absolute;
+  width: 15%;
 }
 section#dashboard-hiringsection .dash-hiring-inner .dash-text-all {
   position: relative;
@@ -2801,6 +2802,7 @@ section#dashboard-hiringsection .dash-order-list ul li:hover img {
 }
 
 section#dashboard-hiringsection .recent-text-inner img {
+  width: 15%;
   position: absolute;
 }
 section#dashboard-hiringsection .recent-offer-inner .dash-text-all {
@@ -2832,6 +2834,7 @@ section#dashboard-hiringsection .recent-offer-inner .dash-text-all {
   margin-bottom: 40px;
 }
 section#dashboard-hiringsection .dash-order-list ul li img {
+  width: 5%;
   POSITION: UNSET !IMPORTANT;
 }
 section#dashboard-hiringsection .recent-offer-inner {
@@ -3441,9 +3444,9 @@ section#hiring ul.button-sec li.completed button {
   border-radius: 20px;
   transition: .9s;
 }
-.hide{
+/* .hide{
   display: none;
-}
+} */
 
 #panel, #flip {
 padding:5px;
@@ -3451,9 +3454,20 @@ padding:5px;
   border:none;
 }
 
+.panel, .flip {
+  padding:5px;
+    text-align: center;
+    border:none;
+  }
+
 #panel {
 padding-top:20px;
-  display: none;
+  /* display: none; */
+  margin:0px 25%;
+}
+.panel {
+padding-top:20px;
+  /* display: none; */
   margin:0px 25%;
 }
 .gallery-servces.moretext {

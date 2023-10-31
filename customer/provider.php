@@ -1,7 +1,6 @@
 <?php
 include 'connection.php';
 session_start();
-
 // Initialize $servicesArray
 $servicesArray = array();
 
@@ -1127,14 +1126,53 @@ foreach ($servicesArray as $individualService) {
         reader.readAsDataURL(file);
     }
   }
-  function uploadImages(customerId, providerId) {
-    const files = document.getElementById("images").files;
+  // function uploadImages(customerId, providerId) {
+  //   const files = document.getElementById("images").files;
 
-    if (files.length !== 5) {
-        alert("Please select exactly 5 images.");
-        return;
-    }
+  //   if (files.length !== 5) {
+  //       alert("Please select exactly 5 images.");
+  //       return;
+  //   }
 
+  //   const formData = new FormData();
+
+  //   for (let i = 0; i < files.length; i++) {
+  //       formData.append("images[]", files[i]);
+  //   }
+
+  //   // Include both customerId and providerId in the form data
+  //   formData.append("customerId", customerId);
+  //   formData.append("providerId", providerId);
+
+  //   // Send the image data to the server using a new AJAX request
+  //   const xhr = new XMLHttpRequest();
+  //   xhr.open('POST', 'add.php'); // Create a new PHP file to handle image uploads
+  //   xhr.send(formData);
+
+  //   xhr.onreadystatechange = function () {
+  //       if (xhr.readyState === 4 && xhr.status === 200) {
+  //           // Handle the server's response here, if needed
+  //           console.log(xhr.responseText);
+  //       }
+  //   };
+  // }
+  function getSelectedServicesWithPrices() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const selectedServices = [];
+
+    checkboxes.forEach((checkbox, index) => {
+        if (checkbox.checked) {
+            const serviceId = checkbox.getAttribute('data-service-id');
+            const serviceName = checkbox.value;
+            const priceElement = document.querySelectorAll('em[contenteditable="true"]')[index];
+            const price = parseFloat(priceElement.textContent) || 0;
+            selectedServices.push({ serviceId, serviceName, price });
+        }
+    });
+
+    return selectedServices;
+}
+function uploadImages(customerId, providerId, files) {
     const formData = new FormData();
 
     for (let i = 0; i < files.length; i++) {
@@ -1156,86 +1194,72 @@ foreach ($servicesArray as $individualService) {
             console.log(xhr.responseText);
         }
     };
-  }
-  function getSelectedServicesWithPrices() {
-    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-    const selectedServices = [];
-
-    checkboxes.forEach((checkbox, index) => {
-        if (checkbox.checked) {
-            const serviceId = checkbox.getAttribute('data-service-id');
-            const serviceName = checkbox.value;
-            const priceElement = document.querySelectorAll('em[contenteditable="true"]')[index];
-            const price = parseFloat(priceElement.textContent) || 0;
-            selectedServices.push({ serviceId, serviceName, price });
-        }
-    });
-
-    return selectedServices;
 }
-    document.getElementById('submit-date').addEventListener('click', function () {
-        // Find the selected date from the calendar
-        const selectedDateElement = document.querySelector('.calendar-day.active');
-        if (selectedDateElement) {
-            const dateYear = selectedDateElement.getAttribute('date-year');
-            const dateMonth = selectedDateElement.getAttribute('date-month');
-            const dateDay = selectedDateElement.getAttribute('date-day');
 
-            // Get the selected time
-            const selectedTime = getSelectedTime();
+document.getElementById('submit-date').addEventListener('click', function () {
+    // Find the selected date from the calendar
+    const selectedDateElement = document.querySelector('.calendar-day.active');
+    if (selectedDateElement) {
+        const dateYear = selectedDateElement.getAttribute('date-year');
+        const dateMonth = selectedDateElement.getAttribute('date-month');
+        const dateDay = selectedDateElement.getAttribute('date-day');
 
-            // Get the customer ID from the input field
-            const customerId = document.getElementById('customer-id').value;
-            const providerId = document.getElementById('provider-id').value;
-            const serviceId = document.getElementById('service-id').value;
+        // Get the selected time
+        const selectedTime = getSelectedTime();
 
-            // Get the task description from the <p> element
-            const userContent = document.getElementById('display-task-description').textContent;
+        // Get the customer ID from the input field
+        const customerId = document.getElementById('customer-id').value;
+        const providerId = document.getElementById('provider-id').value;
+        const serviceId = document.getElementById('service-id').value;
 
-            // Get the selected services and total amount
-            const selectedServices = getSelectedServices();
-            const serviceIds = selectedServices.map(service => service.serviceId); // Extract service IDs
+        // Get the task description from the <p> element
+        const userContent = document.getElementById('display-task-description').textContent;
 
-            const totalAmount = totalAmountElement.textContent.replace('$', '');
-            const images = preview_images();
+        // Get the selected services and total amount
+        const selectedServices = getSelectedServices();
+        const serviceIds = selectedServices.map(service => service.serviceId); // Extract service IDs
 
-            // Create a JavaScript object with all the data
-            const data = {
-                customerId: customerId,
-                providerId: providerId,
-                serviceId: serviceId, // Include the selected service's ID
-                selectedDate: {
-                    year: dateYear,
-                    month: dateMonth,
-                    day: dateDay,
-                },
-                selectedTime: selectedTime,
-                userContent: userContent,
-                selectedServices: getSelectedServicesWithPrices(),// Add this line
-                totalAmount: totalAmount,
-                images: [], // Add an empty array to store base64-encoded image data
-            };
-            // console.log('data', data);
-            // return;
-            // Send the data to the server using AJAX
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', 'php.php'); // Replace with your PHP script URL
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.send(JSON.stringify(data));
+        const totalAmount = totalAmountElement.textContent.replace('$', '');
+        
+        // Create an array to store the selected image files
+        const imageFiles = document.getElementById('images').files;
 
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    // Handle the server's response here, if needed
-                    console.log(xhr.responseText);
-                }
-            };
-            // After sending non-image data, upload images separately
-    uploadImages(customerId, providerId);
-        } else {
-            alert('Please select a date from the calendar.');
-        }
-    });
- 
+        // Create a JavaScript object with all the non-image data
+        const data = {
+            customerId: customerId,
+            providerId: providerId,
+            serviceId: serviceId,
+            selectedDate: {
+                year: dateYear,
+                month: dateMonth,
+                day: dateDay,
+            },
+            selectedTime: selectedTime,
+            userContent: userContent,
+            selectedServices: getSelectedServicesWithPrices(),
+            totalAmount: totalAmount,
+        };
+
+        // Send the non-image data to the server using AJAX
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'php.php');
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(JSON.stringify(data));
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                // Handle the server's response here, if needed
+                console.log(xhr.responseText);
+            }
+        };
+
+        // After sending non-image data, upload images separately
+        uploadImages(customerId, providerId, imageFiles);
+    } else {
+        alert('Please select a date from the calendar.');
+    }
+});
+
 
     // Implement a function to get the selected time from your time selection elements
     function getSelectedTime() {

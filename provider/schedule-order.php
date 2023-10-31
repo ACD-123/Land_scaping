@@ -3,7 +3,7 @@ session_start();
 // Function to get customer information from the provider_registration table
 function getCustomerInfo($customerId) {
   global $conn;
-  $sql = "SELECT fullname, address FROM provider_registration WHERE id = ?";
+  $sql = "SELECT fullname, profile_picture, address FROM provider_registration WHERE id = ?";
   $stmt = $conn->prepare($sql);
   $stmt->bind_param('s', $customerId);
   if ($stmt->execute()) {
@@ -13,39 +13,85 @@ function getCustomerInfo($customerId) {
           return $row;
       }
   }
-  return array('fullname' => 'N/A', 'address' => 'N/A'); // Provide default values if customer info not found
+  return array('fullname' => 'N/A', 'address' => 'N/A', 'profile_picture' => 'N/A'); // Provide default values if customer info not found
 }
 // Function to get the price of a service from the categories table
+function getCustomerServicesAndPrices($customerId, $proposalId) {
+    global $conn;
+    $sql = "SELECT service_name, price FROM customer_services WHERE customer_id = ? AND proposal_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('ss', $customerId, $proposalId);
+
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        $servicesAndPrices = array();
+
+        while ($row = $result->fetch_assoc()) {
+            $serviceCustomers = $row['service_name'];
+            $priceService = $row['price'];
+            $servicesAndPrices[] = array('service_name' => $serviceCustomers, 'price' => $priceService);
+            
+        }
+
+        return $servicesAndPrices;
+    }
+
+    return array();
+}
 function getServicePrice($service) {
-  global $conn;
-  $sql = "SELECT price FROM customer_services WHERE service_name = ?";
-  $stmt = $conn->prepare($sql);
-  $stmt->bind_param('s', $service);
-  if ($stmt->execute()) {
+    global $conn;
+    $sql = "SELECT price FROM customer_services WHERE service_name = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('s', $service);
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row['price'];
+        }
+    }
+    return 'N/A'; // Provide a default value if service price not found
+  }
+  function getCustomerImagesForProvider($customerId, $providerId, $proposalId) {
+    global $conn;
+    $sql = "SELECT image_path FROM customer_images WHERE customer_id = ? AND provider_id = ? AND proposal_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('sss', $customerId, $providerId, $proposalId);
+    if ($stmt->execute()) {
       $result = $stmt->get_result();
-      if ($result->num_rows > 0) {
-          $row = $result->fetch_assoc();
-          return $row['price'];
+      $images = array();
+      while ($row = $result->fetch_assoc()) {
+        $images[] = $row['image_path'];
+      }
+      return $images;
+    }
+    return array();
+  }
+
+
+function getServiceImages($service) {
+  global $conn;
+  $servicesImages = array();
+
+  // Create a prepared statement to select servicesImages based on service names
+  $sql = "SELECT image FROM categories WHERE heading IN (?)";
+  $stmt = $conn->prepare($sql);
+
+  if ($stmt) {
+      $categories = implode("', '", $service); // Assuming service names are in an array
+      $stmt->bind_param('s', $categories);
+
+      if ($stmt->execute()) {
+          $result = $stmt->get_result();
+
+          while ($row = $result->fetch_assoc()) {
+              $servicesImages[] = $row['image'];
+          }
       }
   }
-  return 'N/A'; // Provide a default value if service price not found
-}
-function getCustomerImagesForProvider($customerId, $providerId) {
-  global $conn;
-  $sql = "SELECT image_path FROM customer_images WHERE customer_id = ? AND provider_id = ?";
-  $stmt = $conn->prepare($sql);
-  $stmt->bind_param('ss', $customerId, $providerId);
-  if ($stmt->execute()) {
-    $result = $stmt->get_result();
-    $images = array();
-    while ($row = $result->fetch_assoc()) {
-      $images[] = $row['image_path'];
-    }
-    return $images;
-  }
-  return array();
-}
 
+  return $servicesImages;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -289,7 +335,7 @@ function getCustomerImagesForProvider($customerId, $providerId) {
                   $result = $stmt->get_result();
                   if ($result->num_rows == 0) {
                     // No orders found for the provider
-                    echo '<h2 class="text-center texter">Sheduled orders not available.</h2>';
+                    echo '<h2 class="text-center texter">No new orders available.</h2>';
                 } else {
             while ($row = $result->fetch_assoc()) {
                 $proposalId = $row['id'];
@@ -300,37 +346,43 @@ function getCustomerImagesForProvider($customerId, $providerId) {
                 $userContent = $row['user_content'];
                 $selectedServices = explode(', ', $row['selected_services']);
                 $totalAmount = $row['total_amount'];
+                $current_time = $row['current_time'];
 
                 // Retrieve customer name and address based on customerId
                 $customerInfo = getCustomerInfo($customerId);
-                $customerImages = getCustomerImagesForProvider($customerId, $userId);
 
-                // $customerImages = getCustomerImages($customerId);
-
+                $customerImages = getCustomerImagesForProvider($customerId, $userId, $proposalId);
+                $serviceCustomers = getCustomerServicesAndPrices($customerId, $proposalId);
+                $serviceCustomers1 = getCustomerServicesAndPrices($customerId, $proposalId);
+                
+                
+                // Now you have an array containing the selected services and their prices for the customer
+                
                 // Output the retrieved customer name and address
                 $customerName = $customerInfo['fullname'];
                 $customerAddress = $customerInfo['address'];
-                // $image_path = $customerImages['image_path'];
+                $profile_picture = $customerInfo['profile_picture'];
             ?>
-             <div class="modal fade" id="confirmationModal" role="dialog">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="confirmationModalLabel">Confirm Acceptance</h5>
-                                <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+             <div class="modal" id="sheduled<?php echo $proposalId?>" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="confirmationModalLabel">Confirm Acceptance</h5>
+                                        <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button> -->
-                            </div>
-                            <div class="modal-body h-auto">
-                                <h2 class="pb-4">Are you sure?</h2>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="acceptOffer(<?php echo $proposalId; ?>)">Accept</button>
+                                    </div>
+                                    <div class="modal-body h-auto">
+                                        <h2 class="pb-4">Are you sure?</h2>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                                        <button type="button" class="btn btn-primary" data-dismiss="modal"
+                                            onclick="acceptOffer(<?php echo $proposalId; ?>)">yes</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
             <!-- FIRST PROGRESS PROFILE -->
             <div class="progress-profile">
               <div class="row">
@@ -358,10 +410,10 @@ function getCustomerImagesForProvider($customerId, $providerId) {
                             $showStartButton = true; // Set to true to show the button
                             $showSheduledButton = 'Scheduled Today'; 
                           } elseif ($daysRemaining === 1) {
-                              $dateClass = 'last-day-date';
-                              $imageSrc = './images/schedule.png'; // Change to your desired image path
-                              $showStartButton = true; // Set to true to show the button
-                              $showSheduledButton = 'Scheduled Today'; 
+                              $dateClass = 'other-date';
+                              $imageSrc = './images/scheduled.png'; // Change to your desired image path
+                              $showStartButton = false; // Set to true to show the button
+                              $showSheduledButton = 'Scheduled'; 
                           } else {
                               $dateClass = 'other-date';
                               $imageSrc = './images/scheduled.png'; // Change to your desired image path
@@ -402,10 +454,10 @@ function getCustomerImagesForProvider($customerId, $providerId) {
                   
                   <div class="service-status" style="width: 100%;">
                     <h3>Service Status</h3>
-                    <a class="schedulebutton" href="#"><button><?php echo $showSheduledButton ?></button></a><br>
+                    <a class="schedulebutton"><button><?php echo $showSheduledButton ?></button></a><br>
                     <?php
                     if ($showStartButton) {
-                        echo '<a class="startorder" href="javascript:void(0);"><button type="button" data-toggle="modal" data-target="#confirmationModal" data-proposal-id="<?php echo $proposalId; ?>">Start Order Progress</button></a>';
+                        echo '<a class="startorder" href="javascript:void(0);"><button type="button" data-toggle="modal" data-target="#sheduled' . $proposalId . '">Start Order Progress</button></a>';
                     }
                     ?>
                   </div>
@@ -413,8 +465,9 @@ function getCustomerImagesForProvider($customerId, $providerId) {
 
                 
                 <div class="viewgallery">
-                    <a href="#/" class="viewbuttn">View More <img src="./images/dropdown.png"/></a>
-                    <div class="progress-gallery">
+                    <a href="#/" class="viewbuttn read-more-button1<?php echo $proposalId?>">View More <img src="./images/dropdown.png"/></a>
+
+                    <div class="content1<?php echo $proposalId?> hidden progress-gallery">
                         <div class="row">
                           <div class="col-md-5">
                             <div class="location-images">
@@ -436,13 +489,11 @@ function getCustomerImagesForProvider($customerId, $providerId) {
                             <div class="order-details-progress">
                               <h2>Order details</h2>
                               <ul class="orderdetails-lists">
-                              <?php
-                                // Iterate through selected services
-                                foreach ($selectedServices as $service) {
-                                    // Retrieve the price of the service from the categories table
-                                    $servicePrice = getServicePrice($service);
+                              <?php foreach ($serviceCustomers as $servicenew) {
+                                                            $services = $servicenew['service_name'];
+                                                            $servicePrice = $servicenew['price'];
                                     ?>
-                                    <li><em><?php echo $service; ?></em><span style="color: #70BE44;">$ <?php echo $servicePrice; ?></span></li>
+                                    <li><em><?php echo $services; ?></em><span style="color: #70BE44;">$ <?php echo $servicePrice; ?></span></li>
                                 <?php } ?>
                                 <li class="total-amount"><em><b>Total  amount paid</b></em><span style="color: #70BE44;"><b>$ <?php echo $totalAmount?></b></span></li>
                               </ul>
@@ -451,8 +502,23 @@ function getCustomerImagesForProvider($customerId, $providerId) {
                         </div>
                     </div>
                   </div>
+
               </div>
             </div>
+            <script>
+        const content1<?php echo $proposalId ?> = document.querySelector('.content1<?php echo $proposalId ?>');
+        const readMoreButton1<?php echo $proposalId ?> = document.querySelector('.read-more-button1<?php echo $proposalId ?>');
+
+        readMoreButton1<?php echo $proposalId ?>.addEventListener('click', function () {
+            if (content1<?php echo $proposalId ?>.classList.contains('hidden')) {
+                content1<?php echo $proposalId ?>.classList.remove('hidden');
+                readMoreButton1<?php echo $proposalId ?>.textContent = 'See Less';
+            } else {
+                content1<?php echo $proposalId ?>.classList.add('hidden');
+                readMoreButton1<?php echo $proposalId ?>.textContent = 'See More';
+            }
+        });
+    </script>
             <?php
      }
     }
@@ -520,7 +586,7 @@ function acceptOffer(proposalId) {
 </body>
 
 </html>
-<script>
+<!-- <script>
   $(document).ready(function(){
 		$(".viewbuttn").on("click",function(){
 			var $this = $(this);
@@ -532,4 +598,4 @@ function acceptOffer(proposalId) {
 			}
 		})
 	});
-</script>
+</script> -->

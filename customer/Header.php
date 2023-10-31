@@ -26,6 +26,9 @@ include 'connection.php';
                 <li class="nav-item">
                     <a class="nav-link" href="myhirings.php">My Hirings</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="myoffers.php">My Offers</a>
+                </li>
                 <?php
                    if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'customer') {
                     $userId = $_SESSION['user_id'];
@@ -34,6 +37,7 @@ include 'connection.php';
                     if ($result->num_rows > 0) {
                         $row = $result->fetch_assoc();
                         $fullname = $row['fullname'];
+                        $_SESSION['customerFullName'] = $row['fullname'];
                         $email = $row['email'];
                         $city = $row['city'];
                         $zipcode = $row['zipcode'];
