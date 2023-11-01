@@ -430,6 +430,7 @@ function getServiceImages($service) {
                                             xhr.setRequestHeader('Content-Type', 'application/json');
                                             xhr.send(JSON.stringify({
                                                 proposalId: proposalId,
+                                                statusFrom: 'customer_send',
                                                 status: 'scheduled_offer',
                                                 customerId: customerId,
                                                 providerId: providerId,
@@ -483,6 +484,7 @@ function getServiceImages($service) {
                                             xhr.send(JSON.stringify({
                                                 proposalId: proposalId,
                                                 status: 'reject_offer',
+                                                statusFrom: 'customer_send',
                                                 customerId: customerId,
                                                 providerId: providerId,
                                                 customerFullName: customerFullName,
@@ -853,6 +855,7 @@ function getServiceImages($service) {
                                             xhr.send(JSON.stringify({
                                                 proposalId: proposalId,
                                                 status: 'scheduled_offer',
+                                                statusFrom: 'customer_send',
                                                 customerId: customerId,
                                                 providerId: providerId,
                                                 customerFullName: customerFullName,
@@ -905,6 +908,7 @@ function getServiceImages($service) {
                                             xhr.send(JSON.stringify({
                                                 proposalId: proposalId,
                                                 status: 'reject_offer',
+                                                statusFrom: 'customer_send',
                                                 customerId: customerId,
                                                 providerId: providerId,
                                                 customerFullName: customerFullName,

@@ -47,7 +47,7 @@ session_start();
   
 
 <?php
-include 'Header.php'
+include 'header.php'
 ?>
 
 <!-- banner -->
@@ -94,7 +94,7 @@ function getNotifications($userId) {
     global $conn;
     $sql = "SELECT messages.message_content, messages.provider_id, provider_registration.fullname, provider_registration.profile_picture FROM messages
             INNER JOIN provider_registration ON messages.provider_id = provider_registration.id
-            WHERE messages.customer_id = ?";
+            WHERE messages.customer_id = ? AND messages.status = 'provider_send'";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param('i', $userId);
 
@@ -117,56 +117,28 @@ function getNotifications($userId) {
 
 $userId = $_SESSION['user_id'];
 
-$sql = "SELECT * FROM customer_proposal WHERE customer_id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param('s', $userId);
+$notificationsArray = getNotifications($userId);
 
-if ($stmt->execute()) {
-    $result = $stmt->get_result();
-
-    if ($result->num_rows == 0) {
-        echo '<h2 class="text-center texter">No new orders available.</h2>';
-    } else {
-        while ($row = $result->fetch_assoc()) {
-            $proposalId = $row['id'];
-            $customerId = $row['customer_id'];
-            $providerId = $row['provider_id'];
-            $selectedDate = $row['year'] . '-' . $row['month'] . '-' . $row['day'];
-            $selectedTime = $row['selected_time'];
-            $userContent = $row['user_content'];
-            $selectedServices = explode(', ', $row['selected_services']);
-            $totalAmount = $row['total_amount'];
-            $counterTotall = $row['counter_totall'];
-            $current_time = $row['current_time'];
-
-            // Retrieve customer name and address based on providerId
-            $customerInfo = getCustomerInfo($providerId);
-
-            // Output the retrieved customer name and address
-            $customerName = $customerInfo['fullname'];
-            $customerAddress = $customerInfo['address'];
-            $profilePicture = $customerInfo['profile_picture'];
-
-            // Display customer notifications for this proposal
-            $notificationsArray = getNotifications($userId);
-
-          }
-          foreach ($notificationsArray as $notification) {
-              $messageContent = $notification['message_content'];
-              $providerName = $notification['provider_name'];
-              $providerProfilePicture = $notification['profile_picture'];
-
-              echo "<div class='notify-text' style='padding: 15px 0px;'>";
-              echo "<img src='../provider/$providerProfilePicture' />";
-              echo "<h4>Provider: $providerName</h4>";
-              echo "<p>Message: $messageContent</p>";
-              echo "</div>";
-          }
-    }
+if (count($notificationsArray) === 0) {
+    echo '<h2 class="text-center texter">No messages with status "provider_send" available.</h2>';
 } else {
-    echo 'Error executing the query.';
+    foreach ($notificationsArray as $notification) {
+        $messageContent = $notification['message_content'];
+        $providerName = $notification['provider_name'];
+        $providerProfilePicture = $notification['profile_picture'];
+
+        echo "<div class='notify-text' style='padding: 15px 0px;'>";
+        echo "<img src='../provider/$providerProfilePicture' />";
+        echo "<h4>Provider: $providerName</h4>";
+        echo "<p>Message: $messageContent</p>";
+        echo "</div>";
+    }
 }
 ?>
+
+
+
+
 
 
         </div>

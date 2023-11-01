@@ -32136,6 +32136,36 @@ li.profile-name img {
   padding: 8px 10px;
   border-radius: 10px;
 }
+/* Notificaitons */
+section#notifications-main .notifications-inner .notify-text ul li {
+  display: inline-block;
+  color: #B6B6B6;
+  font-size: 16px;
+  line-height: 23px;
+}
+section#notifications-main .notifications-inner .notify-text h4 {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 32px;
+  color: #000000;
+}
+section#notifications-main .notifications-inner .notify-text p{
+  font-size: 16px;
+  font-weight: 600;
+}
+section#notifications-main .notifications-inner .notify-text {
+  display: flex;
+  /* padding-left: 90px !important; */
+  gap: 14px;
+  align-items: center;
+}
+section#notifications-main .notifications-inner .notify-text img {
+  width: 60px;
+  height: 60px;
+  border-radius: 48px;
+}
 /* .progress-gallery {
   display: none;
 } */

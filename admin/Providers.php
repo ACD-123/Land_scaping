@@ -62,7 +62,7 @@ if (isset($_POST['set_featured'])) {
 
 
   <div class="container-scroller">
-    <?php include 'Header.php'; ?>
+    <?php include 'header.php'; ?>
     <!-- partial -->
     <div class="container-fluid page-body-wrapper">
 

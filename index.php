@@ -47,7 +47,7 @@ include 'connection.php'
   
 
 <?php 
-include 'Header.php';
+include 'header.php';
 ?>
 
 <!-- banner -->

@@ -156,7 +156,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_type'] == 'provider') {
   <div class="container-scroller">
     <!-- partial:partials/_navbar.php -->
     <?php 
-    include 'Header.php'
+    include 'header.php'
     ?>
     <!-- partial -->
     <div class="container-fluid page-body-wrapper">

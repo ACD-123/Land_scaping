@@ -144,7 +144,7 @@ $conn->close();
   <div class="container-scroller ndnd">
     <!-- partial:partials/_navbar.php -->
     <?php 
-     include 'Header.php'
+     include 'header.php'
     ?>
     <!-- partial -->
     <div class="container page-body-wrapper">

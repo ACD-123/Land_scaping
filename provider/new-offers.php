@@ -136,7 +136,7 @@ function getServiceImages($service) {
     <div class="container-scroller">
         <!-- partial:partials/_navbar.php -->
         <?php 
-     include 'Header.php'
+     include 'header.php'
     ?>
         <!-- partial -->
         <div class="container-fluid page-body-wrapper">
@@ -235,20 +235,22 @@ function getServiceImages($service) {
                                             xhr.setRequestHeader('Content-Type', 'application/json');
                                             xhr.send(JSON.stringify({
                                                 proposalId: proposalId,
+                                                statusFrom: 'provider_send',
                                                 status: 'scheduled_offer',
                                                 customerId: customerId,
                                                 providerId: providerId,
                                                 providerName: providerName,
                                                 messageContent: messageContent,
                                             }));
-
+                                            console.log('statusFrom', statusFrom);
+                                            return;
                                             xhr.onreadystatechange = function () {
                                                 if (xhr.readyState === 4 && xhr.status === 200) {
                                                     // Handle the server's response here, if needed
                                                     console.log(xhr.responseText);
 
                                                     // Reload the page after the status is updated
-                                                    location.reload(); // This will refresh the current page
+                                                    // location.reload(); // This will refresh the current page
                                                 }
                                             };
                                         }
@@ -285,6 +287,7 @@ function getServiceImages($service) {
                                             xhr.send(JSON.stringify({
                                                 proposalId: proposalId,
                                                 status: 'reject_offer',
+                                                statusFrom: 'provider_send',
                                                 customerId: customerId,
                                                 providerId: providerId,
                                                 providerName: providerName,
@@ -297,7 +300,7 @@ function getServiceImages($service) {
                                                     console.log(xhr.responseText);
 
                                                     // Reload the page after the status is updated
-                                                    location.reload(); // This will refresh the current page
+                                                    // location.reload(); // This will refresh the current page
                                                 }
                                             };
                                         }

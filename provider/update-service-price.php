@@ -74,16 +74,31 @@ function updateTotalAmount($proposalId, $totalAmount) {
 }
 
 // Function to insert a new message into the MESSAGES table
+// Function to insert a new message into the MESSAGES table and update the status
 function insertMessage($proposalId, $providerId, $customerId, $providerName, $messageContent) {
     global $conn;
     try {
-        $stmt = $conn->prepare('INSERT INTO messages (proposal_id, provider_id, customer_id, provider_name, message_content) VALUES (?, ?, ?, ?, ?)');
-        $stmt->bind_param('diiis', $proposalId, $providerId, $customerId, $providerName, $messageContent);
-        $stmt->execute();
-        $stmt->close();
-        return true;
+        // Start a database transaction to ensure data consistency
+        $conn->begin_transaction();
+
+        $stmt = $conn->prepare('INSERT INTO messages (proposal_id, provider_id, customer_id, provider_name, message_content, status) VALUES (?, ?, ?, ?, ?, ?)');
+        $status = 'provider_send'; // Set the status here
+        $stmt->bind_param('diiiss', $proposalId, $providerId, $customerId, $providerName, $messageContent, $status);
+
+        if ($stmt->execute()) {
+            // If the message insertion is successful, commit the transaction
+            $conn->commit();
+            $stmt->close();
+            return true;
+        } else {
+            // If there's an error, rollback the transaction
+            $conn->rollback();
+            $stmt->close();
+            return false;
+        }
     } catch (Exception $e) {
         return false;
     }
 }
+
 ?>

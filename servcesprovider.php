@@ -43,7 +43,7 @@
   
 
 <?php 
-include 'Header.php';
+include 'header.php';
 ?>
 
 <!-- banner -->

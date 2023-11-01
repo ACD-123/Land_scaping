@@ -1199,6 +1199,7 @@ function uploadImages(customerId, providerId, files) {
 document.getElementById('submit-date').addEventListener('click', function () {
     // Find the selected date from the calendar
     const selectedDateElement = document.querySelector('.calendar-day.active');
+
     if (selectedDateElement) {
         const dateYear = selectedDateElement.getAttribute('date-year');
         const dateMonth = selectedDateElement.getAttribute('date-month');

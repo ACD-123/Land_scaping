@@ -47,7 +47,7 @@ session_start();
   
 
 <?php
-include 'Header.php'
+include 'header.php'
 ?>
 <!-- banner -->
 <section id="main-banner" class="banner bg-cover position-relative d-flex justify-content-center align-items-center"
